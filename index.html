@@ -347,8 +347,8 @@
       <div class="hint-chips" id="hint-chips"></div>
     </div>
     <div class="api-banner" id="api-banner">
-      ⚠️ AI 롤플레잉을 사용하려면 Anthropic API 키가 필요해요
-      <input type="password" id="api-key-input" placeholder="sk-ant-... 입력 후 Enter" onkeydown="if(event.key==='Enter')saveApiKey()">
+      ⚠️ AI 롤플레잉을 사용하려면 Cloudflare Worker URL이 필요해요
+      <input type="url" id="worker-url-input" placeholder="https://...workers.dev 입력 후 Enter" onkeydown="if(event.key==='Enter')saveWorkerUrl()">
     </div>
     <div class="chat-box" id="chat-box">
       <div class="chat-start-center" id="chat-start">
@@ -438,7 +438,7 @@ let chatStarted = false;
 let chatMsgs = [];
 let loading = false;
 let chipState = {}; // 0=en, 1=ko
-let apiKey = localStorage.getItem('apiKey') || '';
+let workerUrl = localStorage.getItem('workerUrl') || '';
 
 // ── Init ──
 function init() {
@@ -466,8 +466,8 @@ function init() {
     btn.classList.add('done');
   }
 
-  // API key
-  if (apiKey) document.getElementById('api-banner').classList.add('hidden');
+  // Worker URL
+  if (workerUrl) document.getElementById('api-banner').classList.add('hidden');
 
   renderPhrases();
   renderVocab();
@@ -603,11 +603,11 @@ function renderHints() {
   });
 }
 
-// ── API Key ──
-function saveApiKey() {
-  apiKey = document.getElementById('api-key-input').value.trim();
-  if (apiKey) {
-    localStorage.setItem('apiKey', apiKey);
+// ── Worker URL ──
+function saveWorkerUrl() {
+  workerUrl = document.getElementById('worker-url-input').value.trim();
+  if (workerUrl) {
+    localStorage.setItem('workerUrl', workerUrl);
     document.getElementById('api-banner').classList.add('hidden');
   }
 }
@@ -681,7 +681,7 @@ async function sendMsg() {
   loading = true;
   renderChat();
 
-  if (!apiKey) {
+  if (!workerUrl) {
     // Fallback without API
     setTimeout(() => {
       const replies = [
@@ -699,20 +699,30 @@ async function sendMsg() {
   }
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const contents = chatMsgs.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    }));
+
+    const res = await fetch(workerUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 200,
-        system: CAT.systemPrompt,
-        messages: chatMsgs.map(m => ({ role: m.role, content: m.content }))
+        model: 'gemini-2.5-flash',
+        systemInstruction: { parts: [{ text: CAT.systemPrompt }] },
+        contents: contents
       })
     });
+    
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || "API Error");
+    }
+    
     const data = await res.json();
-    chatMsgs.push({ role: 'assistant', content: data.content?.[0]?.text || "Pardon? Could you say that again?" });
-  } catch {
-    chatMsgs.push({ role: 'assistant', content: "Sorry! I didn't catch that. Could you try again?" });
+    chatMsgs.push({ role: 'assistant', content: data.candidates?.[0]?.content?.parts?.[0]?.text || "Pardon? Could you say that again?" });
+  } catch (err) {
+    chatMsgs.push({ role: 'assistant', content: "Sorry! Error: " + err.message });
   }
   loading = false;
   renderChat();
