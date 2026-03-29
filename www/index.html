@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>영어 공부 대시보드</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    min-height: 100vh;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 18px 14px 40px;
+  }
+
+  .inner { max-width: 430px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .header { text-align: center; margin-bottom: 16px; }
+  .header-label { font-size: 10px; letter-spacing: 3px; color: #a78bfa; margin-bottom: 3px; }
+  .header-title {
+    font-size: 24px; font-weight: 900;
+    background: linear-gradient(90deg, #a78bfa, #38bdf8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header-date { font-size: 12px; color: #94a3b8; margin-top: 3px; }
+
+  /* ── Stats ── */
+  .stats { display: flex; gap: 10px; justify-content: center; margin-bottom: 14px; }
+  .stat-streak {
+    background: rgba(167,139,250,0.15);
+    border: 1px solid rgba(167,139,250,0.3);
+    border-radius: 14px; padding: 10px 20px; text-align: center;
+  }
+  .stat-streak-num { font-size: 22px; font-weight: 900; color: #a78bfa; }
+  .stat-streak-label { font-size: 11px; color: #94a3b8; }
+  .stat-week {
+    background: rgba(56,189,248,0.1);
+    border: 1px solid rgba(56,189,248,0.2);
+    border-radius: 14px; padding: 10px 14px;
+    display: flex; gap: 5px; align-items: center;
+  }
+  .day-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+    background: rgba(255,255,255,0.04);
+    border: 2px solid transparent; color: #475569;
+    transition: all .2s;
+  }
+  .day-dot.done { background: linear-gradient(135deg, #a78bfa, #38bdf8); color: #fff; border-color: transparent; }
+  .day-dot.today { border-color: #a78bfa; color: #a78bfa; }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex; gap: 4px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px; padding: 3px; margin-bottom: 14px;
+  }
+  .tab-btn {
+    flex: 1; padding: 8px 2px; border: none; border-radius: 7px;
+    cursor: pointer; font-weight: 700; font-size: 11px;
+    font-family: inherit; background: transparent; color: #888;
+    transition: all .2s;
+  }
+  .tab-btn.active {
+    background: linear-gradient(135deg, #a78bfa, #7c3aed);
+    color: #fff;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 14px; padding: 16px; margin-bottom: 10px;
+    border: 1px solid rgba(167,139,250,0.2);
+  }
+  .card-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px; padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .card-emoji { font-size: 30px; }
+  .card-title { font-size: 16px; font-weight: 800; color: #f1f5f9; }
+  .card-sub { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+  /* ── Phrase item ── */
+  .phrase-item {
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 7px;
+    border: 1px solid rgba(255,255,255,0.08);
+    cursor: pointer; transition: all .2s;
+  }
+  .phrase-item.open {
+    background: rgba(167,139,250,0.08);
+    border-color: rgba(167,139,250,0.5);
+  }
+  .phrase-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .phrase-en { font-size: 15px; color: #f1f5f9; font-weight: 600; }
+  .phrase-ko {
+    font-size: 15px; font-weight: 700; color: #fff;
+    background: rgba(255,255,255,0.12);
+    border-radius: 7px; padding: 8px 10px; margin-top: 8px;
+  }
+  .phrase-hint { font-size: 11px; color: #64748b; margin-top: 4px; }
+
+  /* ── Vocab item ── */
+  .vocab-item {
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 7px;
+    border: 1px solid rgba(255,255,255,0.08);
+    cursor: pointer; transition: all .2s;
+  }
+  .vocab-item.open {
+    background: rgba(56,189,248,0.06);
+    border-color: rgba(56,189,248,0.5);
+  }
+  .vocab-word { font-size: 17px; color: #f1f5f9; font-weight: 700; }
+  .vocab-ko { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+  .vocab-examples { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .vocab-ex {
+    background: rgba(56,189,248,0.08);
+    border-left: 3px solid #38bdf8;
+    border-radius: 0 8px 8px 0;
+    padding: 9px 12px; margin-bottom: 6px;
+  }
+  .vocab-ex-en { font-size: 13px; color: #e0f2fe; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .vocab-ex-ko { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+
+  /* ── Speaker btn ── */
+  .spk-btn {
+    background: rgba(167,139,250,0.2);
+    border: 1px solid rgba(167,139,250,0.4);
+    border-radius: 8px; padding: 5px 9px;
+    cursor: pointer; font-size: 13px; color: #a78bfa;
+    flex-shrink: 0; transition: all .15s;
+  }
+  .spk-btn:hover { background: rgba(167,139,250,0.35); }
+  .spk-btn.blue { color: #38bdf8; background: rgba(56,189,248,0.2); border-color: rgba(56,189,248,0.3); font-size: 11px; padding: 2px 7px; }
+
+  /* ── Complete btn ── */
+  .complete-btn {
+    width: 100%; padding: 13px; border-radius: 12px; border: none;
+    cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700;
+    background: linear-gradient(135deg, #a78bfa, #38bdf8); color: #fff;
+    transition: all .3s;
+  }
+  .complete-btn.done { background: rgba(34,197,94,0.2); color: #4ade80; cursor: default; }
+
+  /* ── Quiz ── */
+  .quiz-meta { display: flex; justify-content: space-between; margin-bottom: 12px; }
+  .quiz-tag { font-size: 12px; color: #a78bfa; font-weight: 700; }
+  .quiz-progress { font-size: 11px; color: #94a3b8; }
+  .quiz-hint { font-size: 11px; color: #94a3b8; margin-bottom: 10px; }
+  .quiz-question { font-size: 20px; font-weight: 800; color: #f1f5f9; margin-bottom: 18px; line-height: 1.4; }
+  .quiz-input {
+    width: 100%; background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px; padding: 12px 14px;
+    color: #f1f5f9; font-size: 13px; font-weight: 600;
+    outline: none; font-family: inherit; margin-bottom: 10px;
+    transition: border-color .2s;
+  }
+  .quiz-input:focus { border-color: rgba(167,139,250,0.6); }
+  .quiz-input.correct { background: rgba(34,197,94,0.1); border-color: #4ade80; }
+  .quiz-input.wrong { background: rgba(248,113,113,0.1); border-color: #f87171; }
+  .quiz-check-btn {
+    width: 100%; padding: 12px; border-radius: 10px; border: none;
+    cursor: pointer; background: linear-gradient(135deg, #a78bfa, #7c3aed);
+    color: #fff; font-size: 14px; font-weight: 700; font-family: inherit;
+  }
+  .quiz-result { border-radius: 8px; padding: 12px; margin-bottom: 8px; text-align: center; }
+  .quiz-result.correct { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #86efac; font-weight: 700; font-size: 15px; }
+  .quiz-result.wrong { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); color: #fca5a5; text-align: left; }
+  .quiz-answer { color: #86efac; font-weight: 700; font-size: 15px; }
+  .quiz-next-btn {
+    width: 100%; padding: 12px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    cursor: pointer; background: rgba(255,255,255,0.1);
+    color: #e2e8f0; font-size: 13px; font-weight: 700; font-family: inherit;
+  }
+
+  /* ── Roleplay ── */
+  .role-scene {
+    background: rgba(167,139,250,0.1);
+    border: 1px solid rgba(167,139,250,0.25);
+    border-radius: 12px; padding: 12px 16px;
+    margin-bottom: 10px; display: flex; gap: 10px; align-items: center;
+  }
+  .role-scene-emoji { font-size: 26px; }
+  .role-scene-tag { font-size: 11px; color: #a78bfa; font-weight: 700; margin-bottom: 2px; }
+  .role-scene-text { font-size: 13px; color: #e2e8f0; line-height: 1.5; }
+  .role-hints {
+    background: rgba(56,189,248,0.07);
+    border: 1px solid rgba(56,189,248,0.15);
+    border-radius: 10px; padding: 10px 14px; margin-bottom: 10px;
+  }
+  .role-hints-label { font-size: 10px; color: #38bdf8; font-weight: 700; margin-bottom: 6px; }
+  .hint-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip {
+    font-size: 11px; background: rgba(56,189,248,0.2); color: #e0f2fe;
+    padding: 5px 11px; border-radius: 20px; cursor: pointer;
+    border: 1px solid rgba(56,189,248,0.3); font-weight: 600;
+    transition: all .2s;
+  }
+  .chip:hover { background: rgba(56,189,248,0.35); }
+  .chat-box {
+    background: rgba(0,0,0,0.25); border-radius: 14px; padding: 14px;
+    min-height: 240px; max-height: 320px; overflow-y: auto;
+    margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.07);
+  }
+  .chat-start-center { text-align: center; padding-top: 40px; }
+  .chat-start-icon { font-size: 34px; margin-bottom: 10px; }
+  .chat-start-text { font-size: 13px; color: #94a3b8; margin-bottom: 16px; }
+  .start-btn {
+    background: linear-gradient(135deg, #a78bfa, #7c3aed);
+    border: none; border-radius: 10px; padding: 11px 28px;
+    color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .msg { margin-bottom: 10px; }
+  .msg-label { font-size: 10px; color: #a78bfa; font-weight: 700; margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
+  .msg-row { display: flex; }
+  .msg-row.user { justify-content: flex-end; }
+  .bubble {
+    max-width: 82%; padding: 10px 14px; font-size: 13px; line-height: 1.6;
+    color: #f1f5f9; font-weight: 500;
+    background: rgba(255,255,255,0.1);
+    border-radius: 14px 14px 14px 3px;
+  }
+  .bubble.user {
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    border-radius: 14px 14px 3px 14px;
+  }
+  .bubble-ko {
+    margin-top: 8px; background: rgba(253,230,138,0.1);
+    border-radius: 7px; padding: 7px 9px;
+    border: 1px solid rgba(253,230,138,0.25);
+    font-size: 13px; color: #fde68a; font-weight: 600;
+  }
+  .msg-translate-hint { font-size: 10px; color: #64748b; margin-top: 3px; padding-left: 2px; }
+  .chat-input-row { display: flex; gap: 8px; }
+  .chat-input {
+    flex: 1; background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px; padding: 11px 14px;
+    color: #fff; font-size: 13px; outline: none; font-family: inherit;
+  }
+  .chat-input::placeholder { color: #64748b; }
+  .chat-send-btn {
+    background: linear-gradient(135deg, #a78bfa, #38bdf8);
+    border: none; border-radius: 10px; padding: 11px 16px;
+    cursor: pointer; font-size: 16px;
+  }
+  .typing { display: flex; gap: 4px; padding: 6px 4px; }
+  .typing-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: #a78bfa;
+    animation: bounce 1s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: .2s; }
+  .typing-dot:nth-child(3) { animation-delay: .4s; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+
+  /* ── API key banner ── */
+  .api-banner {
+    background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3);
+    border-radius: 10px; padding: 10px 14px; margin-bottom: 10px;
+    font-size: 12px; color: #fbbf24;
+  }
+  .api-banner input {
+    width: 100%; margin-top: 8px; background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(251,191,36,0.4); border-radius: 7px;
+    padding: 8px 10px; color: #fff; font-size: 12px; outline: none; font-family: inherit;
+  }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="inner">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-label">DAILY ENGLISH</div>
+    <div class="header-title">영어 공부 대시보드</div>
+    <div class="header-date" id="today-date"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-streak">
+      <div class="stat-streak-num">🔥 <span id="streak-num">1</span></div>
+      <div class="stat-streak-label">연속 출석</div>
+    </div>
+    <div class="stat-week" id="week-dots"></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('phrases')">📚 표현</button>
+    <button class="tab-btn" onclick="switchTab('vocab')">📖 단어</button>
+    <button class="tab-btn" onclick="switchTab('role')">🎭 롤플레잉</button>
+    <button class="tab-btn" onclick="switchTab('quiz')">🧠 퀴즈</button>
+  </div>
+
+  <!-- ── 표현 Tab ── -->
+  <div id="tab-phrases">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-emoji">☕</span>
+        <div>
+          <div class="card-title">오늘의 주제: 카페</div>
+          <div class="card-sub">카페 상황에서 꼭 쓰는 표현들이에요</div>
+        </div>
+      </div>
+      <div id="phrases-list"></div>
+    </div>
+    <button class="complete-btn" id="complete-btn" onclick="markComplete()">✔ 오늘 공부 완료 체크</button>
+  </div>
+
+  <!-- ── 단어 Tab ── -->
+  <div id="tab-vocab" class="hidden">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-emoji">☕</span>
+        <div>
+          <div class="card-title">오늘의 단어: 카페</div>
+          <div class="card-sub">탭하면 예문을 볼 수 있어요</div>
+        </div>
+      </div>
+      <div id="vocab-list"></div>
+    </div>
+  </div>
+
+  <!-- ── 롤플레잉 Tab ── -->
+  <div id="tab-role" class="hidden">
+    <div class="role-scene">
+      <span class="role-scene-emoji">☕</span>
+      <div>
+        <div class="role-scene-tag">오늘의 상황 — 카페</div>
+        <div class="role-scene-text">뉴욕 카페에 들어갔어요. 바리스타가 미소로 맞이해요.</div>
+      </div>
+    </div>
+    <div class="role-hints">
+      <div class="role-hints-label">💡 힌트 — 탭하면 한국어 / 한번 더 탭하면 입력창에 넣기</div>
+      <div class="hint-chips" id="hint-chips"></div>
+    </div>
+    <div class="api-banner" id="api-banner">
+      ⚠️ AI 롤플레잉을 사용하려면 Anthropic API 키가 필요해요
+      <input type="password" id="api-key-input" placeholder="sk-ant-... 입력 후 Enter" onkeydown="if(event.key==='Enter')saveApiKey()">
+    </div>
+    <div class="chat-box" id="chat-box">
+      <div class="chat-start-center" id="chat-start">
+        <div class="chat-start-icon">☕</div>
+        <div class="chat-start-text">Barista와 실제 상황처럼 대화해봐요!</div>
+        <button class="start-btn" onclick="startRole()">🎬 롤플레잉 시작!</button>
+      </div>
+      <div id="chat-msgs" class="hidden"></div>
+    </div>
+    <div class="chat-input-row hidden" id="chat-input-row">
+      <input class="chat-input" id="chat-input" placeholder="영어로 대답해보세요..." onkeydown="if(event.key==='Enter')sendMsg()">
+      <button class="chat-send-btn" onclick="sendMsg()">➤</button>
+    </div>
+  </div>
+
+  <!-- ── 퀴즈 Tab ── -->
+  <div id="tab-quiz" class="hidden">
+    <div class="card">
+      <div class="quiz-meta">
+        <span class="quiz-tag">☕ 카페 퀴즈</span>
+        <span class="quiz-progress" id="quiz-progress">1 / 6</span>
+      </div>
+      <div class="quiz-hint">한국어 → 영어로 번역하세요</div>
+      <div class="quiz-question" id="quiz-q"></div>
+      <input class="quiz-input" id="quiz-input" placeholder="영어로 입력하세요..." onkeydown="if(event.key==='Enter')checkQuiz()">
+      <button class="quiz-check-btn" id="quiz-check-btn" onclick="checkQuiz()">정답 확인</button>
+      <div id="quiz-result" class="hidden"></div>
+      <button class="quiz-next-btn hidden" id="quiz-next-btn" onclick="nextQuiz()">다음 문제 →</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Data ──
+const CAT = {
+  emoji: "☕",
+  npc: "Barista",
+  scene: "뉴욕 카페에 들어갔어요. 바리스타가 미소로 맞이해요.",
+  starter: "Hi there! Welcome! What can I get for you today? 😊",
+  systemPrompt: "You are roleplaying as a friendly Barista at a cozy New York café. Scene: A customer walks in and you greet them warmly. Keep replies 1-2 sentences only. Stay in character. If the user makes a grammar mistake, gently correct it in parentheses at the end. Be warm and encouraging. Reply in English only.",
+  phrases: [
+    { en: "Can I have a coffee, please?", ko: "커피 한 잔 주세요." },
+    { en: "One latte, please.", ko: "라떼 하나 주세요." },
+    { en: "Can I get that iced?", ko: "아이스로 해주세요." },
+    { en: "For here or to go?", ko: "여기서 드실 건가요, 가져가실 건가요?" },
+    { en: "How much is it?", ko: "얼마예요?" },
+    { en: "Can I have the receipt?", ko: "영수증 주세요." },
+  ],
+  vocab: [
+    { word: "order", ko: "주문하다", ex: [
+      { en: "I'd like to order a latte.", ko: "라떼를 주문하고 싶어요." },
+      { en: "Can I order something to go?", ko: "테이크아웃으로 주문해도 될까요?" }
+    ]},
+    { word: "iced", ko: "아이스, 차가운", ex: [
+      { en: "Can I get that iced?", ko: "아이스로 해주실 수 있나요?" },
+      { en: "I prefer iced coffee in summer.", ko: "여름엔 아이스 커피가 좋아요." }
+    ]},
+    { word: "receipt", ko: "영수증", ex: [
+      { en: "Can I have the receipt?", ko: "영수증 주세요." },
+      { en: "I need a receipt for my records.", ko: "기록용으로 영수증이 필요해요." }
+    ]},
+    { word: "size", ko: "사이즈, 크기", ex: [
+      { en: "What size would you like?", ko: "사이즈는 어떻게 해드릴까요?" },
+      { en: "I'll take the large size.", ko: "큰 사이즈로 할게요." }
+    ]},
+    { word: "takeout", ko: "테이크아웃, 포장", ex: [
+      { en: "Is this for here or takeout?", ko: "여기서 드실 건가요, 포장인가요?" },
+      { en: "I'll do takeout, please.", ko: "포장으로 할게요." }
+    ]},
+  ],
+};
+
+// ── State ──
+const DAYS_KO = ["일","월","화","수","목","금","토"];
+const today = new Date();
+const todayDay = today.getDay();
+
+let streak = parseInt(localStorage.getItem('streak') || '1');
+let checkedDays = JSON.parse(localStorage.getItem('checkedDays') || '[]');
+let done = localStorage.getItem('done_' + today.toDateString()) === '1';
+let openPhrase = null;
+let openVocab = null;
+let quizIdx = 0;
+let quizAnswered = false;
+let chatStarted = false;
+let chatMsgs = [];
+let loading = false;
+let chipState = {}; // 0=en, 1=ko
+let apiKey = localStorage.getItem('apiKey') || '';
+
+// ── Init ──
+function init() {
+  // Date
+  document.getElementById('today-date').textContent =
+    today.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+
+  // Streak display
+  document.getElementById('streak-num').textContent = streak;
+
+  // Week dots
+  const weekEl = document.getElementById('week-dots');
+  DAYS_KO.forEach((d, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'day-dot' +
+      (checkedDays.includes(i) ? ' done' : '') +
+      (i === todayDay && !checkedDays.includes(i) ? ' today' : '');
+    dot.textContent = checkedDays.includes(i) ? '✓' : d;
+    weekEl.appendChild(dot);
+  });
+
+  if (done) {
+    const btn = document.getElementById('complete-btn');
+    btn.textContent = '✅ 오늘 공부 완료!';
+    btn.classList.add('done');
+  }
+
+  // API key
+  if (apiKey) document.getElementById('api-banner').classList.add('hidden');
+
+  renderPhrases();
+  renderVocab();
+  renderHints();
+  renderQuiz();
+}
+
+// ── Speak ──
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US'; u.rate = 0.9;
+  const voices = window.speechSynthesis.getVoices();
+  const v = voices.find(x => x.lang === 'en-US') || voices.find(x => x.lang.startsWith('en'));
+  if (v) u.voice = v;
+  window.speechSynthesis.speak(u);
+}
+
+// ── Tab switch ──
+function switchTab(name) {
+  ['phrases','vocab','role','quiz'].forEach(t => {
+    document.getElementById('tab-' + t).classList.add('hidden');
+  });
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['phrases','vocab','role','quiz'][i] === name);
+  });
+}
+
+// ── Phrases ──
+function renderPhrases() {
+  const el = document.getElementById('phrases-list');
+  el.innerHTML = '';
+  CAT.phrases.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'phrase-item' + (openPhrase === i ? ' open' : '');
+    div.innerHTML = `
+      <div class="phrase-row">
+        <div class="phrase-en">${p.en}</div>
+        <button class="spk-btn" onclick="event.stopPropagation();speak('${p.en.replace(/'/g,"\\'")}')">🔊</button>
+      </div>
+      ${openPhrase === i
+        ? `<div class="phrase-ko">🇰🇷 ${p.ko}</div>`
+        : `<div class="phrase-hint">👆 탭해서 한국어 보기</div>`}
+    `;
+    div.onclick = () => { openPhrase = openPhrase === i ? null : i; renderPhrases(); };
+    el.appendChild(div);
+  });
+}
+
+// ── Vocab ──
+function renderVocab() {
+  const el = document.getElementById('vocab-list');
+  el.innerHTML = '';
+  CAT.vocab.forEach((v, i) => {
+    const div = document.createElement('div');
+    div.className = 'vocab-item' + (openVocab === i ? ' open' : '');
+    let exHtml = '';
+    if (openVocab === i) {
+      exHtml = `<div class="vocab-examples">` +
+        v.ex.map(ex => `
+          <div class="vocab-ex">
+            <div class="vocab-ex-en">
+              "${ex.en}"
+              <button class="spk-btn blue" onclick="event.stopPropagation();speak('${ex.en.replace(/'/g,"\\'")}')">🔊</button>
+            </div>
+            <div class="vocab-ex-ko">🇰🇷 ${ex.ko}</div>
+          </div>
+        `).join('') + `</div>`;
+    }
+    div.innerHTML = `
+      <div class="phrase-row">
+        <div>
+          <div class="vocab-word">${v.word}</div>
+          <div class="vocab-ko">${v.ko}</div>
+        </div>
+        <button class="spk-btn" onclick="event.stopPropagation();speak('${v.word}')">🔊</button>
+      </div>
+      ${exHtml}
+      ${openVocab !== i ? `<div class="phrase-hint">👆 탭해서 예문 보기</div>` : ''}
+    `;
+    div.onclick = () => { openVocab = openVocab === i ? null : i; renderVocab(); };
+    el.appendChild(div);
+  });
+}
+
+// ── Complete ──
+function markComplete() {
+  if (done) return;
+  done = true;
+  streak++;
+  if (!checkedDays.includes(todayDay)) checkedDays.push(todayDay);
+  localStorage.setItem('streak', streak);
+  localStorage.setItem('checkedDays', JSON.stringify(checkedDays));
+  localStorage.setItem('done_' + today.toDateString(), '1');
+  document.getElementById('streak-num').textContent = streak;
+  const btn = document.getElementById('complete-btn');
+  btn.textContent = '✅ 오늘 공부 완료!';
+  btn.classList.add('done');
+  // Refresh dots
+  document.getElementById('week-dots').innerHTML = '';
+  DAYS_KO.forEach((d, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'day-dot' + (checkedDays.includes(i) ? ' done' : '') + (i === todayDay && !checkedDays.includes(i) ? ' today' : '');
+    dot.textContent = checkedDays.includes(i) ? '✓' : d;
+    document.getElementById('week-dots').appendChild(dot);
+  });
+}
+
+// ── Hints ──
+function renderHints() {
+  const el = document.getElementById('hint-chips');
+  el.innerHTML = '';
+  CAT.phrases.slice(0, 3).forEach((p, i) => {
+    const span = document.createElement('span');
+    span.className = 'chip';
+    span.textContent = p.en;
+    span.onclick = () => {
+      if (chipState[i] === 'ko') {
+        document.getElementById('chat-input').value = p.en;
+        chipState[i] = 'en';
+        span.textContent = p.en;
+        span.style.color = '#e0f2fe';
+      } else {
+        chipState[i] = 'ko';
+        span.textContent = `🇰🇷 ${p.ko}`;
+        span.style.color = '#fde68a';
+        setTimeout(() => { chipState[i] = 'en'; span.textContent = p.en; span.style.color = '#e0f2fe'; }, 2000);
+      }
+    };
+    el.appendChild(span);
+  });
+}
+
+// ── API Key ──
+function saveApiKey() {
+  apiKey = document.getElementById('api-key-input').value.trim();
+  if (apiKey) {
+    localStorage.setItem('apiKey', apiKey);
+    document.getElementById('api-banner').classList.add('hidden');
+  }
+}
+
+// ── Roleplay ──
+function startRole() {
+  chatStarted = true;
+  chatMsgs = [{ role: 'assistant', content: CAT.starter }];
+  document.getElementById('chat-start').classList.add('hidden');
+  document.getElementById('chat-msgs').classList.remove('hidden');
+  document.getElementById('chat-input-row').classList.remove('hidden');
+  renderChat();
+}
+
+function renderChat() {
+  const el = document.getElementById('chat-msgs');
+  el.innerHTML = '';
+  chatMsgs.forEach((m, i) => {
+    const div = document.createElement('div');
+    div.className = 'msg';
+    if (m.role === 'assistant') {
+      div.innerHTML = `
+        <div class="msg-label">
+          ${CAT.emoji} ${CAT.npc}
+          <button class="spk-btn" style="font-size:11px;padding:1px 6px" onclick="speak(\`${m.content.replace(/`/g,'\\`')}\`)">🔊</button>
+        </div>
+        <div class="msg-row">
+          <div class="bubble" id="bubble-${i}" onclick="toggleTranslate(${i}, \`${m.content.replace(/`/g,'\\`')}\`)">
+            ${m.content}
+            ${m.ko ? `<div class="bubble-ko">🇰🇷 ${m.ko}</div>` : ''}
+          </div>
+        </div>
+        <div class="msg-translate-hint">${m.ko ? '👆 탭하면 영어로' : '👆 탭하면 한국어 번역'}</div>
+      `;
+    } else {
+      div.innerHTML = `
+        <div class="msg-row user">
+          <div class="bubble user">${m.content}</div>
+        </div>
+      `;
+    }
+    el.appendChild(div);
+  });
+  if (loading) {
+    const dot = document.createElement('div');
+    dot.className = 'typing';
+    dot.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+    el.appendChild(dot);
+  }
+  el.scrollTop = el.scrollHeight;
+}
+
+async function toggleTranslate(idx, text) {
+  const msg = chatMsgs[idx];
+  if (msg.ko) { delete msg.ko; renderChat(); return; }
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ko&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    msg.ko = data[0].map(x => x[0]).join('');
+  } catch { msg.ko = '번역 실패 😅'; }
+  renderChat();
+}
+
+async function sendMsg() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || loading) return;
+  input.value = '';
+  chatMsgs.push({ role: 'user', content: text });
+  loading = true;
+  renderChat();
+
+  if (!apiKey) {
+    // Fallback without API
+    setTimeout(() => {
+      const replies = [
+        "That sounds great! Would you like any extras with that?",
+        "Sure! Anything else I can get for you?",
+        "Of course! That'll be ready in just a moment.",
+        "Great choice! Would you like that hot or iced?",
+        "No problem! Can I get your name for the order?",
+      ];
+      chatMsgs.push({ role: 'assistant', content: replies[Math.floor(Math.random() * replies.length)] });
+      loading = false;
+      renderChat();
+    }, 800);
+    return;
+  }
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 200,
+        system: CAT.systemPrompt,
+        messages: chatMsgs.map(m => ({ role: m.role, content: m.content }))
+      })
+    });
+    const data = await res.json();
+    chatMsgs.push({ role: 'assistant', content: data.content?.[0]?.text || "Pardon? Could you say that again?" });
+  } catch {
+    chatMsgs.push({ role: 'assistant', content: "Sorry! I didn't catch that. Could you try again?" });
+  }
+  loading = false;
+  renderChat();
+}
+
+// ── Quiz ──
+function renderQuiz() {
+  const p = CAT.phrases[quizIdx];
+  document.getElementById('quiz-q').textContent = `"${p.ko}"`;
+  document.getElementById('quiz-progress').textContent = `${quizIdx + 1} / ${CAT.phrases.length}`;
+  document.getElementById('quiz-input').value = '';
+  document.getElementById('quiz-input').className = 'quiz-input';
+  document.getElementById('quiz-result').classList.add('hidden');
+  document.getElementById('quiz-result').className = 'quiz-result hidden';
+  document.getElementById('quiz-next-btn').classList.add('hidden');
+  document.getElementById('quiz-check-btn').classList.remove('hidden');
+  quizAnswered = false;
+}
+
+function checkQuiz() {
+  if (quizAnswered) return;
+  const val = document.getElementById('quiz-input').value.trim();
+  const correct = CAT.phrases[quizIdx].en;
+  const isCorrect = val.toLowerCase() === correct.toLowerCase();
+  quizAnswered = true;
+
+  const inputEl = document.getElementById('quiz-input');
+  const resultEl = document.getElementById('quiz-result');
+
+  inputEl.className = 'quiz-input ' + (isCorrect ? 'correct' : 'wrong');
+  resultEl.classList.remove('hidden');
+  document.getElementById('quiz-check-btn').classList.add('hidden');
+  document.getElementById('quiz-next-btn').classList.remove('hidden');
+
+  if (isCorrect) {
+    resultEl.className = 'quiz-result correct';
+    resultEl.innerHTML = `🎉 정답! 훌륭해요! <button class="spk-btn" style="margin-left:8px" onclick="speak('${correct.replace(/'/g,"\\'")}')">🔊</button>`;
+  } else {
+    resultEl.className = 'quiz-result wrong';
+    resultEl.innerHTML = `<strong style="display:block;margin-bottom:4px">아쉽지만 다시 도전!</strong>
+      정답: <span class="quiz-answer">${correct}</span>
+      <button class="spk-btn" style="font-size:11px;padding:2px 7px;margin-left:6px" onclick="speak('${correct.replace(/'/g,"\\'")}')">🔊</button>`;
+  }
+}
+
+function nextQuiz() {
+  quizIdx = (quizIdx + 1) % CAT.phrases.length;
+  renderQuiz();
+}
+
+// ── voices async ──
+if (window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = () => {};
+  window.speechSynthesis.getVoices();
+}
+
+init();
+</script>
+</body>
+</html>

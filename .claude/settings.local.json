@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Read(//d/Language Dash Board/$LOCALAPPDATA/Android/**)",
+      "Read(//c/Program Files/Android/Android Studio/**)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(npx cap:*)",
+      "Bash(echo:*)",
+      "Bash(export ANDROID_HOME=\"C:/Users/user/AppData/Local/Android/Sdk\" export JAVA_HOME=\"C:/Program Files/Android/Android Studio/jbr\" cd \"D:/Language Dash Board/android\")",
+      "Bash(./gradlew assembleDebug)",
+      "Bash(git config:*)",
+      "Bash(gh auth:*)"
+    ]
+  }
+}
