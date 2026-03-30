@@ -4,16 +4,23 @@
  */
 export default {
   async fetch(request, env) {
-    // 1. CORS(Cross-Origin Resource Sharing) 미리 허용 (preflight)
+    const ALLOWED_ORIGIN = "https://mamibj112-spec.github.io";
+    const origin = request.headers.get("Origin") || "";
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Max-Age": "86400",
+    };
+
+    // 허용되지 않은 Origin 차단
+    if (origin && origin !== ALLOWED_ORIGIN) {
+      return new Response("Forbidden", { status: 403 });
+    }
+
+    // 1. CORS preflight
     if (request.method === "OPTIONS") {
-      return new Response(null, {
-        headers: {
-          "Access-Control-Allow-Origin": "*", // 보안을 높이려면 "*" 대신 GitHub Pages URL 지정
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
-          "Access-Control-Max-Age": "86400",
-        },
-      });
+      return new Response(null, { headers: corsHeaders });
     }
 
     // 보안 검사: POST 요청이 아니면 거부
@@ -27,7 +34,7 @@ export default {
       if (!apiKey) {
         return new Response(
           JSON.stringify({ error: "API Key (GEMINI_API_KEY) was not provided in Cloudflare env variables" }),
-          { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
 
@@ -39,7 +46,7 @@ export default {
       } catch (e) {
          return new Response(
           JSON.stringify({ error: "Invalid JSON body" }),
-          { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
 
@@ -65,14 +72,14 @@ export default {
         status: geminiResponse.status,
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*", // 프론트엔드(GitHub Pages)에서 읽을 수 있도록 허용
+          ...corsHeaders,
         },
       });
 
     } catch (err) {
       return new Response(
         JSON.stringify({ error: err.message }),
-        { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
   },

@@ -438,7 +438,7 @@ let chatStarted = false;
 let chatMsgs = [];
 let loading = false;
 let chipState = {}; // 0=en, 1=ko
-let workerUrl = localStorage.getItem('workerUrl') || '';
+let workerUrl = 'https://language-dashboard-worker.mamibj7.workers.dev';
 
 // ── Init ──
 function init() {
@@ -466,8 +466,8 @@ function init() {
     btn.classList.add('done');
   }
 
-  // Worker URL
-  if (workerUrl) document.getElementById('api-banner').classList.add('hidden');
+  // Worker URL banner 항상 숨김 (URL 하드코딩됨)
+  document.getElementById('api-banner').classList.add('hidden');
 
   renderPhrases();
   renderVocab();
