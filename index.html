@@ -622,36 +622,22 @@ function init() {
 }
 
 // ── Speak ──
+let _audio = null;
 function speak(text) {
-  if (!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-
-  function doSpeak() {
+  // Google Translate TTS — works reliably in Android WebView
+  if (_audio) { _audio.pause(); _audio = null; }
+  const url = 'https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=en-US&client=tw-ob&q=' + encodeURIComponent(text);
+  _audio = new Audio(url);
+  _audio.play().catch(() => {
+    // fallback to Web Speech API on desktop
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'en-US'; u.rate = 0.9;
-    const voices = window.speechSynthesis.getVoices();
-    const v = voices.find(x => x.lang === 'en-US') || voices.find(x => x.lang.startsWith('en'));
+    const v = window.speechSynthesis.getVoices().find(x => x.lang.startsWith('en'));
     if (v) u.voice = v;
-    // Android WebView fix: resume if paused
-    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
     window.speechSynthesis.speak(u);
-  }
-
-  const voices = window.speechSynthesis.getVoices();
-  if (voices.length > 0) {
-    doSpeak();
-  } else {
-    // voices not loaded yet — wait for them (common on Android)
-    let fired = false;
-    window.speechSynthesis.onvoiceschanged = () => {
-      if (fired) return;
-      fired = true;
-      window.speechSynthesis.onvoiceschanged = null;
-      doSpeak();
-    };
-    // fallback: speak without a specific voice after 500ms
-    setTimeout(() => { if (!fired) { fired = true; doSpeak(); } }, 500);
-  }
+  });
 }
 
 // ── Tab switch ──
@@ -978,11 +964,6 @@ function nextQuiz() {
   renderQuiz();
 }
 
-// ── voices async (pre-load for Android) ──
-if (window.speechSynthesis) {
-  window.speechSynthesis.getVoices();
-  window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
-}
 
 init();
 </script>
