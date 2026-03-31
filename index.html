@@ -398,6 +398,10 @@ const TOPICS = [
       { en: "For here or to go?", ko: "여기서 드실 건가요, 가져가실 건가요?" },
       { en: "How much is it?", ko: "얼마예요?" },
       { en: "Can I have the receipt?", ko: "영수증 주세요." },
+      { en: "Can I get a large size?", ko: "큰 사이즈로 주세요." },
+      { en: "Do you have oat milk?", ko: "귀리 우유 있나요?" },
+      { en: "Can I get a refill?", ko: "리필 해주실 수 있나요?" },
+      { en: "Is there Wi-Fi here?", ko: "여기 와이파이 있나요?" },
     ],
     vocab: [
       { word: "order", ko: "주문하다", ex: [{ en: "I'd like to order a latte.", ko: "라떼를 주문하고 싶어요." }, { en: "Can I order something to go?", ko: "테이크아웃으로 주문해도 될까요?" }] },
@@ -405,6 +409,11 @@ const TOPICS = [
       { word: "receipt", ko: "영수증", ex: [{ en: "Can I have the receipt?", ko: "영수증 주세요." }, { en: "I need a receipt for my records.", ko: "기록용으로 영수증이 필요해요." }] },
       { word: "size", ko: "사이즈, 크기", ex: [{ en: "What size would you like?", ko: "사이즈는 어떻게 해드릴까요?" }, { en: "I'll take the large size.", ko: "큰 사이즈로 할게요." }] },
       { word: "takeout", ko: "테이크아웃, 포장", ex: [{ en: "Is this for here or takeout?", ko: "여기서 드실 건가요, 포장인가요?" }, { en: "I'll do takeout, please.", ko: "포장으로 할게요." }] },
+      { word: "barista", ko: "바리스타", ex: [{ en: "The barista made a beautiful latte art.", ko: "바리스타가 아름다운 라떼 아트를 만들었어요." }, { en: "She is a professional barista.", ko: "그녀는 전문 바리스타예요." }] },
+      { word: "decaf", ko: "디카페인", ex: [{ en: "I'll have a decaf latte, please.", ko: "디카페인 라떼로 주세요." }, { en: "Do you have decaf coffee?", ko: "디카페인 커피 있나요?" }] },
+      { word: "whipped cream", ko: "휘핑크림", ex: [{ en: "Can I get extra whipped cream?", ko: "휘핑크림 더 넣어주세요." }, { en: "I'd like it with whipped cream on top.", ko: "위에 휘핑크림 올려주세요." }] },
+      { word: "syrup", ko: "시럽", ex: [{ en: "Can I add vanilla syrup?", ko: "바닐라 시럽 추가해도 될까요?" }, { en: "One pump of syrup, please.", ko: "시럽 한 번만 넣어주세요." }] },
+      { word: "espresso", ko: "에스프레소", ex: [{ en: "I'd like a double espresso.", ko: "더블 에스프레소 주세요." }, { en: "Espresso is very strong.", ko: "에스프레소는 매우 강해요." }] },
     ],
   },
   {
@@ -616,12 +625,33 @@ function init() {
 function speak(text) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'en-US'; u.rate = 0.9;
+
+  function doSpeak() {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = 0.9;
+    const voices = window.speechSynthesis.getVoices();
+    const v = voices.find(x => x.lang === 'en-US') || voices.find(x => x.lang.startsWith('en'));
+    if (v) u.voice = v;
+    // Android WebView fix: resume if paused
+    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+    window.speechSynthesis.speak(u);
+  }
+
   const voices = window.speechSynthesis.getVoices();
-  const v = voices.find(x => x.lang === 'en-US') || voices.find(x => x.lang.startsWith('en'));
-  if (v) u.voice = v;
-  window.speechSynthesis.speak(u);
+  if (voices.length > 0) {
+    doSpeak();
+  } else {
+    // voices not loaded yet — wait for them (common on Android)
+    let fired = false;
+    window.speechSynthesis.onvoiceschanged = () => {
+      if (fired) return;
+      fired = true;
+      window.speechSynthesis.onvoiceschanged = null;
+      doSpeak();
+    };
+    // fallback: speak without a specific voice after 500ms
+    setTimeout(() => { if (!fired) { fired = true; doSpeak(); } }, 500);
+  }
 }
 
 // ── Tab switch ──
@@ -948,10 +978,10 @@ function nextQuiz() {
   renderQuiz();
 }
 
-// ── voices async ──
+// ── voices async (pre-load for Android) ──
 if (window.speechSynthesis) {
-  window.speechSynthesis.onvoiceschanged = () => {};
   window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
 }
 
 init();
