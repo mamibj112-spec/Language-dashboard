@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>영어 공부 대시보드</title>
+<script src="config.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -208,7 +209,7 @@
   .chip:hover { background: rgba(56,189,248,0.35); }
   .chat-box {
     background: rgba(0,0,0,0.25); border-radius: 14px; padding: 14px;
-    min-height: 240px; max-height: 320px; overflow-y: auto;
+    min-height: 300px; max-height: 480px; overflow-y: auto;
     margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.07);
   }
   .chat-start-center { text-align: center; padding-top: 40px; }
@@ -274,10 +275,109 @@
     padding: 8px 10px; color: #fff; font-size: 12px; outline: none; font-family: inherit;
   }
 
-  .hidden { display: none; }
+  .hidden { display: none !important; }
+
+  /* ── Dialogue ── */
+  .dialogue-line { margin-bottom: 8px; }
+  .dialogue-label {
+    font-size: 10px; font-weight: 700; margin-bottom: 3px;
+    display: flex; align-items: center; gap: 5px; color: #a78bfa;
+  }
+  .dialogue-label.me { color: #38bdf8; justify-content: flex-end; }
+  .dl-wrap { display: flex; }
+  .dl-wrap.me { justify-content: flex-end; }
+  .dl-bubble {
+    max-width: 84%; background: rgba(255,255,255,0.08);
+    border-radius: 14px 14px 14px 3px;
+    padding: 10px 14px; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.08); transition: all .15s;
+  }
+  .dl-bubble.me {
+    background: rgba(56,189,248,0.1);
+    border-color: rgba(56,189,248,0.2);
+    border-radius: 14px 14px 3px 14px;
+  }
+  .dl-en { font-size: 13px; color: #f1f5f9; font-weight: 600; line-height: 1.5; }
+  .dl-ko {
+    margin-top: 6px; font-size: 12px; color: #fde68a;
+    background: rgba(253,230,138,0.08); border-radius: 6px;
+    padding: 5px 8px; border: 1px solid rgba(253,230,138,0.2);
+  }
+  .dl-hint { font-size: 10px; color: #475569; margin-top: 3px; }
+
+  /* ── Correction & Feedback ── */
+  .correction-bubble {
+    margin-top: 6px; background: rgba(251,191,36,0.1);
+    border: 1px solid rgba(251,191,36,0.3);
+    border-radius: 8px; padding: 7px 11px;
+    font-size: 12px; color: #fbbf24; font-weight: 600; line-height: 1.5;
+  }
+  .feedback-btn {
+    width: 100%; padding: 10px; border-radius: 10px;
+    cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700;
+    background: rgba(251,191,36,0.12); color: #fbbf24;
+    border: 1px solid rgba(251,191,36,0.3); margin-top: 8px; transition: all .2s;
+  }
+  .feedback-btn:hover { background: rgba(251,191,36,0.22); }
+  .feedback-card {
+    background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.3);
+    border-radius: 10px; padding: 12px 14px;
+    font-size: 13px; color: #e2e8f0; line-height: 1.7; white-space: pre-wrap;
+  }
+
+  /* ── Settings ── */
+  .settings-btn {
+    position: absolute; top: 18px; right: 14px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px; padding: 7px 10px; cursor: pointer;
+    font-size: 16px; color: #94a3b8; transition: all .2s;
+  }
+  .settings-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+  .settings-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 100; display: flex; align-items: flex-end; justify-content: center;
+  }
+  .settings-panel {
+    background: #1e1b4b; border-radius: 20px 20px 0 0;
+    padding: 24px 20px 36px; width: 100%; max-width: 430px;
+    border-top: 1px solid rgba(167,139,250,0.3);
+  }
+  .settings-title { font-size: 16px; font-weight: 800; color: #f1f5f9; margin-bottom: 6px; }
+  .settings-desc { font-size: 12px; color: #94a3b8; margin-bottom: 16px; line-height: 1.5; }
+  .settings-label { font-size: 11px; color: #a78bfa; font-weight: 700; margin-bottom: 6px; }
+  .settings-input {
+    width: 100%; background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(167,139,250,0.3); border-radius: 10px;
+    padding: 12px 14px; color: #f1f5f9; font-size: 13px;
+    outline: none; font-family: inherit; margin-bottom: 12px;
+  }
+  .settings-input:focus { border-color: #a78bfa; }
+  .settings-save-btn {
+    width: 100%; padding: 13px; border-radius: 12px; border: none;
+    cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700;
+    background: linear-gradient(135deg, #a78bfa, #38bdf8); color: #fff;
+  }
+  .settings-status {
+    text-align: center; font-size: 12px; margin-top: 10px;
+    color: #4ade80; font-weight: 700;
+  }
 </style>
 </head>
 <body>
+<button class="settings-btn" onclick="openSettings()">⚙️</button>
+
+<!-- Settings Modal -->
+<div class="settings-overlay hidden" id="settings-overlay" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-panel">
+    <div class="settings-title">⚙️ 설정</div>
+    <div class="settings-desc">Gemini API 키를 입력하면 AI 롤플레잉을 사용할 수 있어요.<br>키는 이 기기에만 저장되고 외부로 전송되지 않아요.</div>
+    <div class="settings-label">GEMINI API KEY</div>
+    <input class="settings-input" id="settings-api-input" type="password" placeholder="AIza...">
+    <button class="settings-save-btn" onclick="saveSettings()">저장하기</button>
+    <div class="settings-status hidden" id="settings-status">✅ 저장됐어요!</div>
+  </div>
+</div>
+
 <div class="inner">
 
   <!-- Header -->
@@ -298,14 +398,15 @@
 
   <!-- Tabs -->
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('phrases')">📚 표현</button>
+    <button class="tab-btn active" onclick="switchTab('dialogue')">💬 대화</button>
+    <button class="tab-btn" onclick="switchTab('phrases')">📚 표현</button>
     <button class="tab-btn" onclick="switchTab('vocab')">📖 단어</button>
     <button class="tab-btn" onclick="switchTab('role')">🎭 롤플레잉</button>
     <button class="tab-btn" onclick="switchTab('quiz')">🧠 퀴즈</button>
   </div>
 
   <!-- ── 표현 Tab ── -->
-  <div id="tab-phrases">
+  <div id="tab-phrases" class="hidden">
     <div class="card">
       <div class="card-header">
         <span class="card-emoji" id="phrases-emoji">☕</span>
@@ -363,6 +464,21 @@
       <input class="chat-input" id="chat-input" placeholder="영어로 대답해보세요..." onkeydown="if(event.key==='Enter')sendMsg()">
       <button class="chat-send-btn" onclick="sendMsg()">➤</button>
     </div>
+    <button class="feedback-btn hidden" id="feedback-btn" onclick="requestFeedback()">📊 대화 피드백 받기</button>
+  </div>
+
+  <!-- ── 대화 Tab ── -->
+  <div id="tab-dialogue">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-emoji" id="dialogue-emoji">☕</span>
+        <div>
+          <div class="card-title" id="dialogue-title">오늘의 대화: 카페</div>
+          <div class="card-sub">탭하면 한국어 번역 · 🔊로 발음 듣기</div>
+        </div>
+      </div>
+      <div id="dialogue-list"></div>
+    </div>
   </div>
 
   <!-- ── 퀴즈 Tab ── -->
@@ -390,7 +506,7 @@ const TOPICS = [
     emoji: "☕", npc: "Barista",
     scene: "뉴욕 카페에 들어갔어요. 바리스타가 미소로 맞이해요.",
     starter: "Hi there! Welcome! What can I get for you today? 😊",
-    systemPrompt: "You are roleplaying as a friendly Barista at a cozy New York café. Keep replies 1-2 sentences only. Stay in character. Gently correct grammar mistakes in parentheses. Reply in English only.",
+    systemPrompt: "You are a friendly Barista at a cozy New York café having a natural conversation with a Korean English learner. Respond naturally in 2-4 sentences and ask follow-up questions to keep the conversation going. If the learner makes a grammar or vocabulary mistake, add a correction on a new line at the very end formatted exactly like: 💡 Correction: \"[wrong]\" → \"[correct]\". Stay in character. Reply in English only.",
     phrases: [
       { en: "Can I have a coffee, please?", ko: "커피 한 잔 주세요." },
       { en: "One latte, please.", ko: "라떼 하나 주세요." },
@@ -415,12 +531,23 @@ const TOPICS = [
       { word: "syrup", ko: "시럽", ex: [{ en: "Can I add vanilla syrup?", ko: "바닐라 시럽 추가해도 될까요?" }, { en: "One pump of syrup, please.", ko: "시럽 한 번만 넣어주세요." }] },
       { word: "espresso", ko: "에스프레소", ex: [{ en: "I'd like a double espresso.", ko: "더블 에스프레소 주세요." }, { en: "Espresso is very strong.", ko: "에스프레소는 매우 강해요." }] },
     ],
+    dialogues: [
+      { role:'npc', en:"Hi there! Welcome! What can I get for you today?", ko:"어서오세요! 오늘 뭘 드릴까요?" },
+      { role:'user', en:"Can I have a large iced latte, please?", ko:"아이스 라떼 큰 사이즈로 주세요." },
+      { role:'npc', en:"Sure! Would you like any syrup with that?", ko:"알겠어요! 시럽 넣어드릴까요?" },
+      { role:'user', en:"Yes, can I add vanilla syrup?", ko:"네, 바닐라 시럽 추가해 주세요." },
+      { role:'npc', en:"That'll be $6.50. For here or to go?", ko:"6달러 50센트예요. 여기서 드실 건가요, 가져가실 건가요?" },
+      { role:'user', en:"To go, please. Can I have the receipt?", ko:"가져갈게요. 영수증도 주세요." },
+      { role:'npc', en:"Here's your receipt! Your drink will be ready shortly.", ko:"영수증 여기요! 음료는 곧 나올 거예요." },
+      { role:'user', en:"Thank you! Is there Wi-Fi here?", ko:"감사해요! 와이파이 있나요?" },
+      { role:'npc', en:"Yes! The password is on the board. Enjoy your drink!", ko:"네! 비밀번호는 저기 칠판에 있어요. 즐거운 시간 보내세요!" },
+    ],
   },
   {
     emoji: "✈️", npc: "Airport Staff",
     scene: "뉴욕 공항에 도착했어요. 체크인 카운터 직원이 기다리고 있어요.",
     starter: "Good morning! Welcome to JFK Airport. May I see your passport and ticket, please? 😊",
-    systemPrompt: "You are roleplaying as a friendly airport check-in staff at JFK Airport. Help the customer check in. Keep replies 1-2 sentences. Stay in character. Gently correct grammar mistakes in parentheses. Reply in English only.",
+    systemPrompt: "You are a friendly airport check-in staff at JFK Airport having a natural conversation with a Korean English learner. Respond naturally in 2-4 sentences and ask follow-up questions to keep the interaction going. If the learner makes a grammar or vocabulary mistake, add a correction on a new line at the very end formatted exactly like: 💡 Correction: \"[wrong]\" → \"[correct]\". Stay in character. Reply in English only.",
     phrases: [
       { en: "Where is the check-in counter?", ko: "체크인 카운터가 어디에 있나요?" },
       { en: "I'd like a window seat, please.", ko: "창가 자리로 주세요." },
@@ -436,12 +563,21 @@ const TOPICS = [
       { word: "passport", ko: "여권", ex: [{ en: "Can I see your passport?", ko: "여권을 보여주실 수 있나요?" }, { en: "I left my passport at the hotel.", ko: "여권을 호텔에 두고 왔어요." }] },
       { word: "customs", ko: "세관", ex: [{ en: "Do I need to go through customs?", ko: "세관을 통과해야 하나요?" }, { en: "Please fill out the customs form.", ko: "세관 신고서를 작성해 주세요." }] },
     ],
+    dialogues: [
+      { role:'npc', en:"Good morning! May I see your passport and ticket, please?", ko:"안녕하세요! 여권과 티켓 보여주시겠어요?" },
+      { role:'user', en:"Sure, here you go. Is my flight on time?", ko:"네, 여기 있어요. 제 비행기가 정시에 출발하나요?" },
+      { role:'npc', en:"Yes, it's departing on schedule. How many bags are you checking?", ko:"네, 정시 출발이에요. 맡기실 가방이 몇 개예요?" },
+      { role:'user', en:"Just one. How much is the baggage fee?", ko:"하나요. 수하물 요금이 얼마예요?" },
+      { role:'npc', en:"It's included in your ticket. Window or aisle seat?", ko:"티켓에 포함되어 있어요. 창가 자리로 드릴까요, 통로 쪽으로 드릴까요?" },
+      { role:'user', en:"A window seat, please. Where is the boarding gate?", ko:"창가 자리로 주세요. 탑승 게이트가 어디예요?" },
+      { role:'npc', en:"Gate 24, down the hall to the right. Have a great flight!", ko:"24번 게이트예요, 복도 끝 오른쪽이에요. 좋은 여행 되세요!" },
+    ],
   },
   {
     emoji: "🍽️", npc: "Waiter",
     scene: "뉴욕 레스토랑에 들어갔어요. 웨이터가 자리로 안내해요.",
     starter: "Good evening! Welcome! Do you have a reservation, or will this be a walk-in? 🍽️",
-    systemPrompt: "You are roleplaying as a friendly waiter at a nice New York restaurant. Help the customer with ordering. Keep replies 1-2 sentences. Stay in character. Gently correct grammar mistakes in parentheses. Reply in English only.",
+    systemPrompt: "You are a friendly waiter at a nice New York restaurant having a natural conversation with a Korean English learner. Respond naturally in 2-4 sentences and ask follow-up questions to keep the conversation going. If the learner makes a grammar or vocabulary mistake, add a correction on a new line at the very end formatted exactly like: 💡 Correction: \"[wrong]\" → \"[correct]\". Stay in character. Reply in English only.",
     phrases: [
       { en: "Can I see the menu, please?", ko: "메뉴판 주세요." },
       { en: "I'd like to order now.", ko: "주문할게요." },
@@ -457,12 +593,23 @@ const TOPICS = [
       { word: "allergic", ko: "알레르기가 있는", ex: [{ en: "I'm allergic to shellfish.", ko: "저 조개류 알레르기 있어요." }, { en: "Are there any allergens in this dish?", ko: "이 요리에 알레르기 유발 성분이 있나요?" }] },
       { word: "tip", ko: "팁, 봉사료", ex: [{ en: "Is the tip included?", ko: "팁이 포함되어 있나요?" }, { en: "I'd like to leave a tip.", ko: "팁을 남기고 싶어요." }] },
     ],
+    dialogues: [
+      { role:'npc', en:"Good evening! Do you have a reservation?", ko:"안녕하세요! 예약하셨나요?" },
+      { role:'user', en:"Yes, a reservation for two.", ko:"네, 두 명으로 예약했어요." },
+      { role:'npc', en:"Right this way! Here's your menu.", ko:"이쪽으로 오세요! 메뉴판 여기 있어요." },
+      { role:'user', en:"What do you recommend?", ko:"추천 메뉴가 뭐예요?" },
+      { role:'npc', en:"Our salmon is very popular tonight! Not spicy at all.", ko:"오늘 연어가 인기 많아요! 전혀 안 매워요." },
+      { role:'user', en:"I'll have that. I'm allergic to nuts, just so you know.", ko:"그걸로 할게요. 참고로 견과류 알레르기 있어요." },
+      { role:'npc', en:"Got it! I'll let the kitchen know. Enjoy your meal!", ko:"알겠어요! 주방에 알려드릴게요. 맛있게 드세요!" },
+      { role:'user', en:"Can I have the bill, please?", ko:"계산서 주세요." },
+      { role:'npc', en:"Of course! Here you are. Was everything alright?", ko:"물론이죠! 여기 있어요. 다 맛있게 드셨나요?" },
+    ],
   },
   {
     emoji: "🛍️", npc: "Shop Assistant",
     scene: "뉴욕 쇼핑몰에 들어갔어요. 직원이 도움을 제안해요.",
     starter: "Hi there! Welcome to our store. Are you looking for anything in particular today? 🛍️",
-    systemPrompt: "You are roleplaying as a helpful shop assistant in a New York clothing store. Help the customer find what they need. Keep replies 1-2 sentences. Stay in character. Gently correct grammar mistakes in parentheses. Reply in English only.",
+    systemPrompt: "You are a helpful shop assistant in a New York clothing store having a natural conversation with a Korean English learner. Respond naturally in 2-4 sentences and ask follow-up questions to keep the interaction going. If the learner makes a grammar or vocabulary mistake, add a correction on a new line at the very end formatted exactly like: 💡 Correction: \"[wrong]\" → \"[correct]\". Stay in character. Reply in English only.",
     phrases: [
       { en: "I'm just browsing, thanks.", ko: "그냥 구경하는 거예요, 감사합니다." },
       { en: "Do you have this in a larger size?", ko: "이거 더 큰 사이즈 있나요?" },
@@ -478,12 +625,23 @@ const TOPICS = [
       { word: "refund", ko: "환불", ex: [{ en: "Can I get a refund?", ko: "환불 받을 수 있나요?" }, { en: "I'd like a full refund.", ko: "전액 환불 원해요." }] },
       { word: "browse", ko: "둘러보다", ex: [{ en: "I'm just browsing.", ko: "그냥 둘러보는 거예요." }, { en: "Feel free to browse around.", ko: "편하게 둘러보세요." }] },
     ],
+    dialogues: [
+      { role:'npc', en:"Hi! Welcome. Are you looking for anything in particular?", ko:"어서오세요! 찾으시는 거 있으세요?" },
+      { role:'user', en:"I'm just browsing, thanks.", ko:"그냥 구경하는 거예요, 감사합니다." },
+      { role:'npc', en:"Of course! Let me know if you need any help.", ko:"알겠어요! 도움 필요하시면 말씀해 주세요." },
+      { role:'user', en:"Actually, do you have this in a larger size?", ko:"사실 이거 더 큰 사이즈 있나요?" },
+      { role:'npc', en:"Let me check — yes, we have it in Large and XL!", ko:"확인해 볼게요 — 네, L이랑 XL 있어요!" },
+      { role:'user', en:"Can I try this on? Where are the fitting rooms?", ko:"입어봐도 될까요? 탈의실이 어디예요?" },
+      { role:'npc', en:"Sure! The fitting rooms are at the back.", ko:"물론이죠! 탈의실은 뒤쪽에 있어요." },
+      { role:'user', en:"Do you have this in another color?", ko:"다른 색상도 있나요?" },
+      { role:'npc', en:"Yes, we also have it in blue and black!", ko:"네, 파란색이랑 검정색도 있어요!" },
+    ],
   },
   {
     emoji: "🏨", npc: "Receptionist",
     scene: "뉴욕 호텔에 도착했어요. 프런트 직원이 웰컴 인사를 해요.",
     starter: "Good evening! Welcome to The Grand Hotel. Do you have a reservation with us? 🏨",
-    systemPrompt: "You are roleplaying as a friendly hotel receptionist at a New York hotel. Help the guest check in and answer questions. Keep replies 1-2 sentences. Stay in character. Gently correct grammar mistakes in parentheses. Reply in English only.",
+    systemPrompt: "You are a friendly hotel receptionist at a New York hotel having a natural conversation with a Korean English learner. Respond naturally in 2-4 sentences and ask follow-up questions to keep the interaction going. If the learner makes a grammar or vocabulary mistake, add a correction on a new line at the very end formatted exactly like: 💡 Correction: \"[wrong]\" → \"[correct]\". Stay in character. Reply in English only.",
     phrases: [
       { en: "I have a reservation under my name.", ko: "제 이름으로 예약했어요." },
       { en: "What time is check-out?", ko: "체크아웃이 몇 시예요?" },
@@ -499,12 +657,23 @@ const TOPICS = [
       { word: "housekeeping", ko: "객실 청소 서비스", ex: [{ en: "Can housekeeping clean my room?", ko: "객실 청소 해주실 수 있나요?" }, { en: "Housekeeping comes at 10 AM.", ko: "객실 청소는 오전 10시에 해요." }] },
       { word: "checkout", ko: "체크아웃", ex: [{ en: "What time is checkout?", ko: "체크아웃이 몇 시예요?" }, { en: "Late checkout is available for an extra fee.", ko: "추가 요금으로 레이트 체크아웃이 가능해요." }] },
     ],
+    dialogues: [
+      { role:'npc', en:"Good evening! Welcome to The Grand Hotel. Do you have a reservation?", ko:"안녕하세요! 그랜드 호텔에 오신 것을 환영해요. 예약하셨나요?" },
+      { role:'user', en:"Yes, a reservation under the name Kim.", ko:"네, 김씨 이름으로 예약했어요." },
+      { role:'npc', en:"Found it! Here's your room key. You're in room 512.", ko:"찾았어요! 방 키 여기 있어요. 512호예요." },
+      { role:'user', en:"Thank you. Is breakfast included?", ko:"감사해요. 조식이 포함되어 있나요?" },
+      { role:'npc', en:"Yes! Breakfast is served from 7 to 10 AM in the dining room.", ko:"네! 조식은 오전 7시부터 10시까지 식당에서 제공돼요." },
+      { role:'user', en:"Can I have a wake-up call at 7?", ko:"7시에 모닝콜 부탁드려요." },
+      { role:'npc', en:"Of course! I'll set that up for you right away.", ko:"물론이죠! 바로 설정해 드릴게요." },
+      { role:'user', en:"The Wi-Fi isn't working in my room.", ko:"방에서 와이파이가 안 돼요." },
+      { role:'npc', en:"I'm sorry! I'll send someone to fix it immediately.", ko:"죄송해요! 바로 수리 요원을 보내드릴게요." },
+    ],
   },
   {
     emoji: "💊", npc: "Pharmacist",
     scene: "뉴욕 약국에 들어갔어요. 약사가 도움을 제공해요.",
     starter: "Hello! How can I help you today? Are you looking for something specific? 💊",
-    systemPrompt: "You are roleplaying as a friendly pharmacist at a New York pharmacy. Help the customer find medication. Keep replies 1-2 sentences. Stay in character. Gently correct grammar mistakes in parentheses. Reply in English only.",
+    systemPrompt: "You are a friendly pharmacist at a New York pharmacy having a natural conversation with a Korean English learner. Respond naturally in 2-4 sentences and ask follow-up questions to help them. If the learner makes a grammar or vocabulary mistake, add a correction on a new line at the very end formatted exactly like: 💡 Correction: \"[wrong]\" → \"[correct]\". Stay in character. Reply in English only.",
     phrases: [
       { en: "I have a headache.", ko: "두통이 있어요." },
       { en: "Do you have something for a cold?", ko: "감기약 있나요?" },
@@ -520,12 +689,23 @@ const TOPICS = [
       { word: "allergy", ko: "알레르기", ex: [{ en: "I have a drug allergy.", ko: "저는 약물 알레르기가 있어요." }, { en: "Are you allergic to anything?", ko: "알레르기 있는 게 있나요?" }] },
       { word: "pharmacist", ko: "약사", ex: [{ en: "Ask the pharmacist for advice.", ko: "약사에게 조언을 구하세요." }, { en: "The pharmacist recommended this.", ko: "약사가 이걸 추천했어요." }] },
     ],
+    dialogues: [
+      { role:'npc', en:"Hello! How can I help you today?", ko:"안녕하세요! 오늘 무엇을 도와드릴까요?" },
+      { role:'user', en:"I have a headache. I need a pain reliever.", ko:"두통이 있어요. 진통제가 필요해요." },
+      { role:'npc', en:"Sure! Do you have any drug allergies?", ko:"알겠어요! 약물 알레르기 있으세요?" },
+      { role:'user', en:"No allergies. Is this available without a prescription?", ko:"없어요. 처방전 없이 살 수 있나요?" },
+      { role:'npc', en:"Yes, this is over-the-counter. Take it twice a day with food.", ko:"네, 처방전 없이 살 수 있어요. 하루 두 번 식후에 드세요." },
+      { role:'user', en:"Any side effects I should know about?", ko:"알아야 할 부작용이 있나요?" },
+      { role:'npc', en:"Drowsiness is common. Avoid driving after taking it.", ko:"졸음이 흔해요. 복용 후 운전은 피하세요." },
+      { role:'user', en:"Got it. Do you have something for a cold as well?", ko:"알겠어요. 감기약도 있나요?" },
+      { role:'npc', en:"Of course! Follow me — I'll show you our options.", ko:"물론이죠! 이쪽으로 오세요 — 보여드릴게요." },
+    ],
   },
   {
     emoji: "🗺️", npc: "Local",
     scene: "뉴욕 거리에서 길을 잃었어요. 지나가는 사람에게 물어봐요.",
     starter: "Oh, are you lost? Where are you trying to go? I can try to help! 🗺️",
-    systemPrompt: "You are roleplaying as a friendly New York local helping a tourist find their way. Keep replies 1-2 sentences. Stay in character. Gently correct grammar mistakes in parentheses. Reply in English only.",
+    systemPrompt: "You are a friendly New York local helping a tourist find their way, having a natural conversation with a Korean English learner. Respond naturally in 2-4 sentences and ask follow-up questions to keep the conversation going. If the learner makes a grammar or vocabulary mistake, add a correction on a new line at the very end formatted exactly like: 💡 Correction: \"[wrong]\" → \"[correct]\". Stay in character. Reply in English only.",
     phrases: [
       { en: "Excuse me, how do I get to Times Square?", ko: "실례합니다, 타임스퀘어에 어떻게 가나요?" },
       { en: "Is it far from here?", ko: "여기서 멀어요?" },
@@ -541,12 +721,23 @@ const TOPICS = [
       { word: "subway", ko: "지하철", ex: [{ en: "Take the subway to get there faster.", ko: "지하철을 타면 더 빨리 가요." }, { en: "Where is the nearest subway station?", ko: "가장 가까운 지하철역이 어디예요?" }] },
       { word: "landmark", ko: "랜드마크 (주요 건물)", ex: [{ en: "Use the Empire State as a landmark.", ko: "엠파이어 스테이트 빌딩을 랜드마크로 사용하세요." }, { en: "It's right next to the landmark.", ko: "랜드마크 바로 옆이에요." }] },
     ],
+    dialogues: [
+      { role:'npc', en:"Hey, are you lost? I can try to help!", ko:"길 잃으셨어요? 도와드릴게요!" },
+      { role:'user', en:"Excuse me, how do I get to Times Square?", ko:"실례합니다, 타임스퀘어에 어떻게 가나요?" },
+      { role:'npc', en:"Walk straight for two blocks, then turn left.", ko:"두 블록 직진하고 왼쪽으로 도세요." },
+      { role:'user', en:"Is it far from here? Can I walk there?", ko:"여기서 멀어요? 걸어갈 수 있나요?" },
+      { role:'npc', en:"Not at all! It's about a 10-minute walk.", ko:"전혀요! 걸어서 약 10분이에요." },
+      { role:'user', en:"Which subway line should I take if I'm in a hurry?", ko:"급하면 어느 지하철 노선을 타야 해요?" },
+      { role:'npc', en:"Take the A or C line to 42nd Street. Very quick!", ko:"A나 C 노선 타고 42번가에서 내리세요. 매우 빨라요!" },
+      { role:'user', en:"How long does it take by subway?", ko:"지하철로 얼마나 걸려요?" },
+      { role:'npc', en:"Only about 5 minutes! The station is right at the corner.", ko:"5분밖에 안 걸려요! 역은 저 모퉁이에 있어요." },
+    ],
   },
   {
     emoji: "💼", npc: "Colleague",
     scene: "뉴욕 회사 첫 출근이에요. 동료가 반갑게 인사해요.",
     starter: "Hey, welcome to the team! I'm your colleague, Alex. Is this your first day? 💼",
-    systemPrompt: "You are roleplaying as a friendly colleague at a New York office on the new employee's first day. Keep replies 1-2 sentences. Stay in character. Gently correct grammar mistakes in parentheses. Reply in English only.",
+    systemPrompt: "You are a friendly colleague at a New York office on a new employee's first day, having a natural conversation with a Korean English learner. Respond naturally in 2-4 sentences and ask follow-up questions to keep the conversation going. If the learner makes a grammar or vocabulary mistake, add a correction on a new line at the very end formatted exactly like: 💡 Correction: \"[wrong]\" → \"[correct]\". Stay in character. Reply in English only.",
     phrases: [
       { en: "Nice to meet you.", ko: "만나서 반가워요." },
       { en: "I'm new here.", ko: "저 여기 처음이에요." },
@@ -561,6 +752,17 @@ const TOPICS = [
       { word: "meeting", ko: "회의", ex: [{ en: "We have a meeting at 10 AM.", ko: "오전 10시에 회의가 있어요." }, { en: "Can we reschedule the meeting?", ko: "회의 일정을 바꿀 수 있나요?" }] },
       { word: "presentation", ko: "발표", ex: [{ en: "I need to prepare a presentation.", ko: "발표 준비를 해야 해요." }, { en: "How did your presentation go?", ko: "발표 어떻게 됐어요?" }] },
       { word: "overtime", ko: "야근, 초과근무", ex: [{ en: "I had to work overtime last night.", ko: "어젯밤에 야근했어요." }, { en: "Do you get paid for overtime?", ko: "야근 수당 받아요?" }] },
+    ],
+    dialogues: [
+      { role:'npc', en:"Hey, welcome to the team! Is this your first day?", ko:"어서와요, 팀에 합류한 걸 환영해요! 오늘 첫 출근이에요?" },
+      { role:'user', en:"Yes! Nice to meet you. I'm new here.", ko:"네! 만나서 반가워요. 여기 처음이에요." },
+      { role:'npc', en:"Nice to meet you too! I'm Alex. Let me show you around.", ko:"저도 반가워요! 저는 알렉스예요. 안내해 드릴게요." },
+      { role:'user', en:"Thank you! Where is the meeting room?", ko:"감사해요! 회의실이 어디예요?" },
+      { role:'npc', en:"Down the hall on the left. We have a team meeting tomorrow at 10 AM.", ko:"복도 끝 왼쪽이에요. 내일 오전 10시에 팀 회의가 있어요." },
+      { role:'user', en:"Got it. When is the deadline for the current project?", ko:"알겠어요. 현재 프로젝트 마감이 언제예요?" },
+      { role:'npc', en:"This Friday! We might work overtime to finish it.", ko:"이번 금요일이에요! 끝내려면 야근할 수도 있어요." },
+      { role:'user', en:"Understood. I'll send you an email with my contact info.", ko:"알겠어요. 연락처 이메일로 보낼게요." },
+      { role:'npc', en:"Great! Looking forward to working with you!", ko:"좋아요! 같이 일하게 되어서 기대돼요!" },
     ],
   },
 ];
@@ -583,7 +785,9 @@ let chatStarted = false;
 let chatMsgs = [];
 let loading = false;
 let chipState = {}; // 0=en, 1=ko
+let openDialogue = {};
 let workerUrl = 'https://language-dashboard-worker.mamibj7.workers.dev';
+let geminiApiKey = (typeof GEMINI_API_KEY !== 'undefined' && GEMINI_API_KEY) ? GEMINI_API_KEY : (localStorage.getItem('geminiApiKey') || '');
 
 // ── Init ──
 function init() {
@@ -619,6 +823,7 @@ function init() {
   renderVocab();
   renderHints();
   renderQuiz();
+  renderDialogue();
 }
 
 // ── Speak ──
@@ -642,12 +847,12 @@ function speak(text) {
 
 // ── Tab switch ──
 function switchTab(name) {
-  ['phrases','vocab','role','quiz'].forEach(t => {
+  ['dialogue','phrases','vocab','role','quiz'].forEach(t => {
     document.getElementById('tab-' + t).classList.add('hidden');
   });
   document.getElementById('tab-' + name).classList.remove('hidden');
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
-    b.classList.toggle('active', ['phrases','vocab','role','quiz'][i] === name);
+    b.classList.toggle('active', ['dialogue','phrases','vocab','role','quiz'][i] === name);
   });
 }
 
@@ -664,7 +869,7 @@ function renderPhrases() {
         <button class="spk-btn" onclick="event.stopPropagation();speak('${p.en.replace(/'/g,"\\'")}')">🔊</button>
       </div>
       ${openPhrase === i
-        ? `<div class="phrase-ko">🇰🇷 ${p.ko}</div>`
+        ? `<div class="phrase-ko">${p.ko}</div>`
         : `<div class="phrase-hint">👆 탭해서 한국어 보기</div>`}
     `;
     div.onclick = () => { openPhrase = openPhrase === i ? null : i; renderPhrases(); };
@@ -688,7 +893,7 @@ function renderVocab() {
               "${ex.en}"
               <button class="spk-btn blue" onclick="event.stopPropagation();speak('${ex.en.replace(/'/g,"\\'")}')">🔊</button>
             </div>
-            <div class="vocab-ex-ko">🇰🇷 ${ex.ko}</div>
+            <div class="vocab-ex-ko">${ex.ko}</div>
           </div>
         `).join('') + `</div>`;
     }
@@ -722,6 +927,8 @@ function updateTopicUI() {
   document.getElementById('chat-start-icon').textContent = t.emoji;
   document.getElementById('chat-start-text').textContent = t.npc + '와 실제 상황처럼 대화해봐요!';
   document.getElementById('quiz-tag').textContent = t.emoji + ' ' + t.npc + ' 퀴즈';
+  document.getElementById('dialogue-emoji').textContent = t.emoji;
+  document.getElementById('dialogue-title').textContent = '오늘의 대화: ' + t.npc;
 }
 
 // ── Load New Topic ──
@@ -735,15 +942,18 @@ function loadNewTopic() {
   chatStarted = false;
   chatMsgs = [];
   chipState = {};
+  openDialogue = {};
   updateTopicUI();
   renderPhrases();
   renderVocab();
   renderHints();
   renderQuiz();
+  renderDialogue();
   // 롤플레잉 초기화
   document.getElementById('chat-start').classList.remove('hidden');
   document.getElementById('chat-msgs').classList.add('hidden');
   document.getElementById('chat-input-row').classList.add('hidden');
+  document.getElementById('feedback-btn').classList.add('hidden');
 }
 
 // ── Complete ──
@@ -785,13 +995,32 @@ function renderHints() {
         span.style.color = '#e0f2fe';
       } else {
         chipState[i] = 'ko';
-        span.textContent = `🇰🇷 ${p.ko}`;
+        span.textContent = p.ko;
         span.style.color = '#fde68a';
         setTimeout(() => { chipState[i] = 'en'; span.textContent = p.en; span.style.color = '#e0f2fe'; }, 2000);
       }
     };
     el.appendChild(span);
   });
+}
+
+// ── Settings ──
+function openSettings() {
+  const input = document.getElementById('settings-api-input');
+  if (geminiApiKey) input.value = geminiApiKey;
+  document.getElementById('settings-status').classList.add('hidden');
+  document.getElementById('settings-overlay').classList.remove('hidden');
+}
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.add('hidden');
+}
+function saveSettings() {
+  const key = document.getElementById('settings-api-input').value.trim();
+  if (!key) return;
+  geminiApiKey = key;
+  localStorage.setItem('geminiApiKey', key);
+  document.getElementById('settings-status').classList.remove('hidden');
+  setTimeout(closeSettings, 1200);
 }
 
 // ── Worker URL ──
@@ -810,7 +1039,22 @@ function startRole() {
   document.getElementById('chat-start').classList.add('hidden');
   document.getElementById('chat-msgs').classList.remove('hidden');
   document.getElementById('chat-input-row').classList.remove('hidden');
+  document.getElementById('feedback-btn').classList.remove('hidden');
   renderChat();
+}
+
+function parseReply(content) {
+  const lines = content.split('\n');
+  const corrections = [];
+  const mainLines = [];
+  lines.forEach(l => {
+    if (l.trim().startsWith('💡 Correction:') || l.trim().startsWith('💡Correction:')) {
+      corrections.push(l.trim());
+    } else {
+      mainLines.push(l);
+    }
+  });
+  return { main: mainLines.join('\n').trim(), corrections };
 }
 
 function renderChat() {
@@ -820,19 +1064,30 @@ function renderChat() {
     const div = document.createElement('div');
     div.className = 'msg';
     if (m.role === 'assistant') {
-      div.innerHTML = `
-        <div class="msg-label">
-          ${currentTopic.emoji} ${currentTopic.npc}
-          <button class="spk-btn" style="font-size:11px;padding:1px 6px" onclick="speak(\`${m.content.replace(/`/g,'\\`')}\`)">🔊</button>
-        </div>
-        <div class="msg-row">
-          <div class="bubble" id="bubble-${i}" onclick="toggleTranslate(${i}, \`${m.content.replace(/`/g,'\\`')}\`)">
-            ${m.content}
-            ${m.ko ? `<div class="bubble-ko">🇰🇷 ${m.ko}</div>` : ''}
+      if (m.isFeedback) {
+        div.innerHTML = `
+          <div class="msg-label">📊 대화 피드백</div>
+          <div class="feedback-card">${m.content}</div>
+        `;
+      } else {
+        const parsed = parseReply(m.content);
+        const mainText = parsed.main;
+        const corrHtml = parsed.corrections.map(c => `<div class="correction-bubble">${c}</div>`).join('');
+        div.innerHTML = `
+          <div class="msg-label">
+            ${currentTopic.emoji} ${currentTopic.npc}
+            <button class="spk-btn" style="font-size:11px;padding:1px 6px" onclick="speak(\`${mainText.replace(/`/g,'\\`')}\`)">🔊</button>
           </div>
-        </div>
-        <div class="msg-translate-hint">${m.ko ? '👆 탭하면 영어로' : '👆 탭하면 한국어 번역'}</div>
-      `;
+          <div class="msg-row">
+            <div class="bubble" id="bubble-${i}" onclick="toggleTranslate(${i}, \`${mainText.replace(/`/g,'\\`')}\`)">
+              ${mainText}
+              ${m.ko ? `<div class="bubble-ko">${m.ko}</div>` : ''}
+            </div>
+          </div>
+          <div class="msg-translate-hint">${m.ko ? '👆 탭하면 영어로' : '👆 탭하면 한국어 번역'}</div>
+          ${corrHtml}
+        `;
+      }
     } else {
       div.innerHTML = `
         <div class="msg-row user">
@@ -872,48 +1127,40 @@ async function sendMsg() {
   loading = true;
   renderChat();
 
-  if (!workerUrl) {
-    // Fallback without API
-    setTimeout(() => {
-      const replies = [
-        "That sounds great! Would you like any extras with that?",
-        "Sure! Anything else I can get for you?",
-        "Of course! That'll be ready in just a moment.",
-        "Great choice! Would you like that hot or iced?",
-        "No problem! Can I get your name for the order?",
-      ];
-      chatMsgs.push({ role: 'assistant', content: replies[Math.floor(Math.random() * replies.length)] });
-      loading = false;
-      renderChat();
-    }, 800);
+  if (!geminiApiKey) {
+    chatMsgs.push({ role: 'assistant', content: "⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요." });
+    loading = false;
+    renderChat();
     return;
   }
 
   try {
-    const contents = chatMsgs.map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }]
-    }));
+    const contents = chatMsgs
+      .filter(m => !m.isFeedback)
+      .map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: parseReply(m.content).main }]
+      }));
 
-    const res = await fetch(workerUrl, {
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+    const res = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gemini-2.5-flash',
         systemInstruction: { parts: [{ text: currentTopic.systemPrompt }] },
-        contents: contents
+        contents
       })
     });
-    
+
     if (!res.ok) {
       const errData = await res.json();
-      throw new Error(errData.error || "API Error");
+      throw new Error(errData.error?.message || "API Error");
     }
-    
+
     const data = await res.json();
     chatMsgs.push({ role: 'assistant', content: data.candidates?.[0]?.content?.parts?.[0]?.text || "Pardon? Could you say that again?" });
   } catch (err) {
-    chatMsgs.push({ role: 'assistant', content: "Sorry! Error: " + err.message });
+    chatMsgs.push({ role: 'assistant', content: "❌ 오류: " + err.message });
   }
   loading = false;
   renderChat();
@@ -962,6 +1209,71 @@ function checkQuiz() {
 function nextQuiz() {
   quizIdx = (quizIdx + 1) % currentTopic.phrases.length;
   renderQuiz();
+}
+
+// ── Feedback ──
+async function requestFeedback() {
+  if (!chatStarted || chatMsgs.length < 3 || loading) return;
+  loading = true;
+  renderChat();
+
+  const history = chatMsgs
+    .filter(m => !m.isFeedback)
+    .map(m => `${m.role === 'user' ? 'Student' : currentTopic.npc}: ${parseReply(m.content).main}`)
+    .join('\n');
+
+  const prompt = `다음 영어 대화를 분석해서 한국어로 피드백을 줘:\n\n${history}\n\n아래 형식으로 작성:\n✅ 잘한 점\n- (2~3가지)\n\n⚠️ 고칠 표현\n- 틀린 표현 → 올바른 표현 (이유 한 줄)\n\n💬 추천 표현\n- 이 상황에서 쓰면 좋은 표현 1~2개\n\n짧고 친절하게 써줘.`;
+
+  try {
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: 'You are an English conversation coach. Give feedback in Korean only.' }] },
+        contents: [{ role: 'user', parts: [{ text: prompt }] }]
+      })
+    });
+    if (!res.ok) throw new Error('API Error');
+    const data = await res.json();
+    const feedback = data.candidates?.[0]?.content?.parts?.[0]?.text || '피드백을 가져올 수 없어요.';
+    chatMsgs.push({ role: 'assistant', content: feedback, isFeedback: true });
+  } catch (err) {
+    chatMsgs.push({ role: 'assistant', content: '피드백 오류: ' + err.message, isFeedback: true });
+  }
+  loading = false;
+  renderChat();
+}
+
+// ── Dialogue ──
+function renderDialogue() {
+  const el = document.getElementById('dialogue-list');
+  el.innerHTML = '';
+  currentTopic.dialogues.forEach((d, i) => {
+    const isUser = d.role === 'user';
+    const isOpen = openDialogue[i];
+    const div = document.createElement('div');
+    div.className = 'dialogue-line';
+    div.innerHTML = `
+      <div class="dialogue-label ${isUser ? 'me' : ''}">
+        ${isUser ? '' : `${currentTopic.emoji} ${currentTopic.npc}`}
+        <button class="${isUser ? 'spk-btn blue' : 'spk-btn'}" style="font-size:11px;padding:2px 6px" onclick="event.stopPropagation();speak(\`${d.en.replace(/`/g,'\\`')}\`)">🔊</button>
+        ${isUser ? '나 (Me)' : ''}
+      </div>
+      <div class="dl-wrap ${isUser ? 'me' : ''}">
+        <div class="dl-bubble ${isUser ? 'me' : ''}" onclick="toggleDialogue(${i})">
+          <div class="dl-en">${d.en}</div>
+          ${isOpen ? `<div class="dl-ko">${d.ko}</div>` : `<div class="dl-hint">👆 탭해서 한국어 보기</div>`}
+        </div>
+      </div>
+    `;
+    el.appendChild(div);
+  });
+}
+
+function toggleDialogue(i) {
+  openDialogue[i] = !openDialogue[i];
+  renderDialogue();
 }
 
 
