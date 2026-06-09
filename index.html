@@ -361,6 +361,32 @@
     text-align: center; font-size: 12px; margin-top: 10px;
     color: #4ade80; font-weight: 700;
   }
+
+  /* ── Pattern ── */
+  .pattern-item {
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
+    border: 1px solid rgba(255,255,255,0.08); cursor: pointer; transition: all .2s;
+  }
+  .pattern-item.open {
+    background: rgba(167,139,250,0.08);
+    border-color: rgba(167,139,250,0.4);
+  }
+  .pattern-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .pattern-text { font-size: 17px; font-weight: 800; color: #f1f5f9; }
+  .pattern-ko { font-size: 12px; color: #94a3b8; margin-top: 3px; }
+  .pattern-tag {
+    font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; flex-shrink: 0;
+    background: rgba(167,139,250,0.2); color: #a78bfa; border: 1px solid rgba(167,139,250,0.3);
+  }
+  .pattern-examples { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.07); }
+  .pattern-ex {
+    background: rgba(56,189,248,0.07); border-left: 3px solid #38bdf8;
+    border-radius: 0 8px 8px 0; padding: 9px 12px; margin-bottom: 6px;
+  }
+  .pattern-ex-en { font-size: 13px; color: #e0f2fe; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .pattern-ex-ko { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+  .pattern-hint { font-size: 11px; color: #64748b; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -403,6 +429,7 @@
     <button class="tab-btn" onclick="switchTab('vocab')">📖 단어</button>
     <button class="tab-btn" onclick="switchTab('role')">🎭 롤플레잉</button>
     <button class="tab-btn" onclick="switchTab('quiz')">🧠 퀴즈</button>
+    <button class="tab-btn" onclick="switchTab('pattern')">📐 패턴</button>
   </div>
 
   <!-- ── 표현 Tab ── -->
@@ -494,6 +521,20 @@
       <button class="quiz-check-btn" id="quiz-check-btn" onclick="checkQuiz()">정답 확인</button>
       <div id="quiz-result" class="hidden"></div>
       <button class="quiz-next-btn hidden" id="quiz-next-btn" onclick="nextQuiz()">다음 문제 →</button>
+    </div>
+  </div>
+
+  <!-- ── 패턴 Tab ── -->
+  <div id="tab-pattern" class="hidden">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-emoji">📐</span>
+        <div>
+          <div class="card-title">범용 패턴 영어</div>
+          <div class="card-sub">어디서든 쓰는 핵심 패턴 · 탭하면 예문 보기</div>
+        </div>
+      </div>
+      <div id="pattern-list"></div>
     </div>
   </div>
 
@@ -767,6 +808,105 @@ const TOPICS = [
   },
 ];
 
+const PATTERNS = [
+  {
+    pattern: "I'd like to ~", ko: "~하고 싶어요 (정중한 요청)", tag: "요청",
+    examples: [
+      { en: "I'd like to order a coffee, please.", ko: "커피 한 잔 주문하고 싶어요." },
+      { en: "I'd like to book a room for two nights.", ko: "2박으로 방을 예약하고 싶어요." },
+      { en: "I'd like to exchange this for a different size.", ko: "이걸 다른 사이즈로 교환하고 싶어요." },
+    ]
+  },
+  {
+    pattern: "Could you ~?", ko: "~해 주실 수 있나요? (정중한 부탁)", tag: "부탁",
+    examples: [
+      { en: "Could you show me around?", ko: "안내해 주실 수 있나요?" },
+      { en: "Could you speak more slowly?", ko: "좀 더 천천히 말씀해 주실 수 있나요?" },
+      { en: "Could you recommend something?", ko: "추천해 주실 수 있나요?" },
+    ]
+  },
+  {
+    pattern: "Do you have ~?", ko: "~있나요? (가용 여부 확인)", tag: "확인",
+    examples: [
+      { en: "Do you have this in a larger size?", ko: "이거 더 큰 사이즈 있나요?" },
+      { en: "Do you have any vegetarian options?", ko: "채식 메뉴 있나요?" },
+      { en: "Do you have Wi-Fi here?", ko: "여기 와이파이 있나요?" },
+    ]
+  },
+  {
+    pattern: "Is it okay if ~?", ko: "~해도 될까요? (허락 구하기)", tag: "허락",
+    examples: [
+      { en: "Is it okay if I sit here?", ko: "여기 앉아도 될까요?" },
+      { en: "Is it okay if I pay by card?", ko: "카드로 결제해도 될까요?" },
+      { en: "Is it okay if I come a bit late?", ko: "조금 늦게 가도 될까요?" },
+    ]
+  },
+  {
+    pattern: "I'm looking for ~", ko: "~를 찾고 있어요", tag: "요청",
+    examples: [
+      { en: "I'm looking for the nearest subway station.", ko: "가장 가까운 지하철역을 찾고 있어요." },
+      { en: "I'm looking for a medium-sized shirt.", ko: "미디엄 사이즈 셔츠를 찾고 있어요." },
+      { en: "I'm looking for something for a headache.", ko: "두통에 좋은 걸 찾고 있어요." },
+    ]
+  },
+  {
+    pattern: "How long does it take to ~?", ko: "~하는 데 얼마나 걸려요?", tag: "질문",
+    examples: [
+      { en: "How long does it take to get there by subway?", ko: "지하철로 거기까지 얼마나 걸려요?" },
+      { en: "How long does it take to check in?", ko: "체크인하는 데 얼마나 걸려요?" },
+      { en: "How long does it take for the food to arrive?", ko: "음식이 나오는 데 얼마나 걸려요?" },
+    ]
+  },
+  {
+    pattern: "I was wondering if ~", ko: "~인지 여쭤보고 싶어서요 (조심스러운 질문)", tag: "질문",
+    examples: [
+      { en: "I was wondering if you have any rooms available.", ko: "혹시 빈 방이 있는지 여쭤보고 싶어서요." },
+      { en: "I was wondering if I could get a refund.", ko: "환불이 가능한지 여쭤보고 싶어서요." },
+      { en: "I was wondering if the kitchen is still open.", ko: "주방이 아직 열려 있는지 여쭤보고 싶어서요." },
+    ]
+  },
+  {
+    pattern: "Would you mind ~ing?", ko: "~해 주시면 안 될까요? (매우 정중)", tag: "부탁",
+    examples: [
+      { en: "Would you mind taking a photo of us?", ko: "저희 사진 찍어 주시면 안 될까요?" },
+      { en: "Would you mind moving over a little?", ko: "조금 옮겨 주시면 안 될까요?" },
+      { en: "Would you mind repeating that?", ko: "다시 한 번 말씀해 주시면 안 될까요?" },
+    ]
+  },
+  {
+    pattern: "I'm having trouble ~ing", ko: "~하는 데 어려움이 있어요", tag: "문제",
+    examples: [
+      { en: "I'm having trouble connecting to the Wi-Fi.", ko: "와이파이 연결하는 데 어려움이 있어요." },
+      { en: "I'm having trouble finding the gate.", ko: "게이트를 찾는 데 어려움이 있어요." },
+      { en: "I'm having trouble understanding the menu.", ko: "메뉴를 이해하는 데 어려움이 있어요." },
+    ]
+  },
+  {
+    pattern: "It turns out ~", ko: "알고 보니 ~이더라고요 (뜻밖의 사실)", tag: "표현",
+    examples: [
+      { en: "It turns out the restaurant was closed.", ko: "알고 보니 그 식당이 문을 닫았더라고요." },
+      { en: "It turns out I had the wrong address.", ko: "알고 보니 주소가 틀렸더라고요." },
+      { en: "It turns out they don't accept cash.", ko: "알고 보니 현금을 안 받더라고요." },
+    ]
+  },
+  {
+    pattern: "I should have ~", ko: "~했어야 했는데 (후회)", tag: "표현",
+    examples: [
+      { en: "I should have made a reservation.", ko: "예약을 했어야 했는데." },
+      { en: "I should have brought my umbrella.", ko: "우산을 챙겨왔어야 했는데." },
+      { en: "I should have asked for directions earlier.", ko: "더 일찍 길을 물어봤어야 했는데." },
+    ]
+  },
+  {
+    pattern: "Feel free to ~", ko: "편하게 ~하세요 (권유)", tag: "표현",
+    examples: [
+      { en: "Feel free to ask me anything.", ko: "편하게 뭐든지 물어보세요." },
+      { en: "Feel free to look around.", ko: "편하게 둘러보세요." },
+      { en: "Feel free to take your time.", ko: "천천히 편하게 하세요." },
+    ]
+  },
+];
+
 let currentTopic = TOPICS[Math.floor(Math.random() * TOPICS.length)];
 
 // ── State ──
@@ -824,6 +964,7 @@ function init() {
   renderHints();
   renderQuiz();
   renderDialogue();
+  renderPatterns();
 }
 
 // ── Speak ──
@@ -847,12 +988,12 @@ function speak(text) {
 
 // ── Tab switch ──
 function switchTab(name) {
-  ['dialogue','phrases','vocab','role','quiz'].forEach(t => {
+  ['dialogue','phrases','vocab','role','quiz','pattern'].forEach(t => {
     document.getElementById('tab-' + t).classList.add('hidden');
   });
   document.getElementById('tab-' + name).classList.remove('hidden');
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
-    b.classList.toggle('active', ['dialogue','phrases','vocab','role','quiz'][i] === name);
+    b.classList.toggle('active', ['dialogue','phrases','vocab','role','quiz','pattern'][i] === name);
   });
 }
 
@@ -943,6 +1084,7 @@ function loadNewTopic() {
   chatMsgs = [];
   chipState = {};
   openDialogue = {};
+  practicePattern = null;
   updateTopicUI();
   renderPhrases();
   renderVocab();
@@ -1033,13 +1175,37 @@ function saveWorkerUrl() {
 }
 
 // ── Roleplay ──
-function startRole() {
+async function startRole() {
   chatStarted = true;
-  chatMsgs = [{ role: 'assistant', content: currentTopic.starter }];
+  chatMsgs = [];
   document.getElementById('chat-start').classList.add('hidden');
   document.getElementById('chat-msgs').classList.remove('hidden');
   document.getElementById('chat-input-row').classList.remove('hidden');
   document.getElementById('feedback-btn').classList.remove('hidden');
+
+  if (practicePattern && geminiApiKey) {
+    loading = true;
+    renderChat();
+    try {
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: practicePattern.systemPrompt }] },
+          contents: [{ role: 'user', parts: [{ text: 'Start the practice session now.' }] }]
+        })
+      });
+      const data = await res.json();
+      chatMsgs.push({ role: 'assistant', content: data.candidates?.[0]?.content?.parts?.[0]?.text || "Let's practice! I'll set up a situation for you." });
+    } catch(e) {
+      chatMsgs.push({ role: 'assistant', content: `Let's practice "${practicePattern.pattern}"! I'll create a situation — ready?` });
+    }
+    loading = false;
+  } else {
+    chatMsgs = [{ role: 'assistant', content: currentTopic.starter }];
+    practicePattern = null;
+  }
   renderChat();
 }
 
@@ -1147,7 +1313,7 @@ async function sendMsg() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: currentTopic.systemPrompt }] },
+        systemInstruction: { parts: [{ text: practicePattern ? practicePattern.systemPrompt : currentTopic.systemPrompt }] },
         contents
       })
     });
@@ -1209,6 +1375,86 @@ function checkQuiz() {
 function nextQuiz() {
   quizIdx = (quizIdx + 1) % currentTopic.phrases.length;
   renderQuiz();
+}
+
+// ── Pattern ──
+let openPattern = null;
+let practicePattern = null;
+
+function renderPatterns() {
+  const el = document.getElementById('pattern-list');
+  el.innerHTML = '';
+  PATTERNS.forEach((p, i) => {
+    const isOpen = openPattern === i;
+    const div = document.createElement('div');
+    div.className = 'pattern-item' + (isOpen ? ' open' : '');
+    let exHtml = '';
+    if (isOpen) {
+      exHtml = `<div class="pattern-examples">` +
+        p.examples.map(ex => `
+          <div class="pattern-ex">
+            <div class="pattern-ex-en">
+              "${ex.en}"
+              <button class="spk-btn blue" onclick="event.stopPropagation();speak('${ex.en.replace(/'/g,"\\'")}')">🔊</button>
+            </div>
+            <div class="pattern-ex-ko">${ex.ko}</div>
+          </div>
+        `).join('') +
+        `</div>
+        <button class="complete-btn" style="margin-top:10px;font-size:13px;padding:10px;background:linear-gradient(135deg,#38bdf8,#6366f1)" onclick="event.stopPropagation();startPatternPractice(${i})">💬 이 패턴으로 대화 연습하기</button>`;
+    }
+    div.innerHTML = `
+      <div class="pattern-top">
+        <div>
+          <div class="pattern-text">${p.pattern}</div>
+          <div class="pattern-ko">${p.ko}</div>
+        </div>
+        <span class="pattern-tag">${p.tag}</span>
+      </div>
+      ${exHtml}
+      ${!isOpen ? `<div class="pattern-hint">👆 탭해서 예문 보기</div>` : ''}
+    `;
+    div.onclick = () => { openPattern = openPattern === i ? null : i; renderPatterns(); };
+    el.appendChild(div);
+  });
+}
+
+// ── Pattern Practice ──
+function startPatternPractice(idx) {
+  const p = PATTERNS[idx];
+  practicePattern = {
+    pattern: p.pattern,
+    ko: p.ko,
+    systemPrompt: `You are a friendly English conversation partner helping a Korean learner practice the pattern "${p.pattern}" (meaning: ${p.ko}).
+
+Your job:
+1. Start by creating a natural, specific scenario where using "${p.pattern}" is the most appropriate response
+2. Keep guiding the conversation so the learner has 2-3 clear chances to use this pattern
+3. When the learner correctly uses "${p.pattern}", respond with "✨ Perfect use of the pattern!" then continue naturally
+4. If they miss a clear opportunity, gently hint: "Hint: try starting with '${p.pattern.replace('~','...')}'..."
+5. Respond naturally in 2-3 sentences and keep the conversation going with a question or prompt
+6. If the learner makes a grammar mistake, add at the end: 💡 Correction: "[wrong]" → "[correct]"
+7. Reply in English only.
+
+Now begin: set up a vivid, realistic scenario and invite the learner to respond.`
+  };
+
+  practiceActive = true;
+  chatStarted = false;
+  chatMsgs = [];
+  chipState = {};
+
+  document.getElementById('role-emoji').textContent = '📐';
+  document.getElementById('role-tag').textContent = '패턴 연습 — ' + p.pattern;
+  document.getElementById('role-scene').textContent = p.ko + ' — AI가 상황을 만들어 드려요';
+  document.getElementById('chat-start-icon').textContent = '📐';
+  document.getElementById('chat-start-text').textContent = '"' + p.pattern + '" 패턴을 실제 대화에서 연습해봐요!';
+  document.getElementById('chat-start').classList.remove('hidden');
+  document.getElementById('chat-msgs').classList.add('hidden');
+  document.getElementById('chat-input-row').classList.add('hidden');
+  document.getElementById('feedback-btn').classList.add('hidden');
+
+  switchTab('role');
 }
 
 // ── Feedback ──
