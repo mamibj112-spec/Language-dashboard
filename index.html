@@ -1050,7 +1050,7 @@ function init() {
   renderDialogue();
   renderPatterns();
 
-  switchDashboard(currentDashboard);
+  switchDashboard(currentDashboard, true);
 }
 
 // ── Speak ──
@@ -1125,8 +1125,16 @@ const DASHBOARDS = {
   },
 };
 let currentDashboard = localStorage.getItem('currentDashboard') || 'english';
+let currentTabName = null;
+let isRestoringHistory = false;
 
-function switchDashboard(name) {
+function pushHistoryState(replace) {
+  if (isRestoringHistory) return;
+  const state = { dashboard: currentDashboard, tab: currentTabName, modal: null };
+  history[replace ? 'replaceState' : 'pushState'](state, '', location.href);
+}
+
+function switchDashboard(name, _isInitial) {
   currentDashboard = name;
   localStorage.setItem('currentDashboard', name);
   document.getElementById('dash-btn-english').classList.toggle('active', name === 'english');
@@ -1136,14 +1144,16 @@ function switchDashboard(name) {
   const dash = DASHBOARDS[name];
   tabsEl.innerHTML = dash.tabs.map((t, i) => `<button class="tab-btn${i === 0 ? ' active' : ''}" onclick="switchTab('${t.id}')">${t.label}</button>`).join('');
 
-  switchTab(dash.tabs[0].id);
+  switchTab(dash.tabs[0].id, true);
+  pushHistoryState(_isInitial);
 }
 
-function switchTab(name) {
+function switchTab(name, skipHistory) {
   TAB_NAMES.forEach(t => {
     document.getElementById('tab-' + t).classList.add('hidden');
   });
   document.getElementById('tab-' + name).classList.remove('hidden');
+  currentTabName = name;
   const dash = DASHBOARDS[currentDashboard];
   document.querySelectorAll('#dashboard-tabs .tab-btn').forEach((b, i) => {
     b.classList.toggle('active', dash.tabs[i].id === name);
@@ -1163,10 +1173,35 @@ function switchTab(name) {
   if (name === 'companyDash') {
     notesLoadAll().then(renderCompanyDashboard);
   }
+  if (!skipHistory) pushHistoryState();
 }
 let pptInitialized = false;
 let opicInitialized = false;
 let notesInitialized = false;
+
+// ── 뒤로가기 버튼 처리 (모달/탭/대시보드 순서로 닫고 이동) ──
+window.addEventListener('popstate', (e) => {
+  isRestoringHistory = true;
+  try {
+    const state = e.state;
+    const targetModal = state && state.modal;
+    if (targetModal !== 'lightbox') closeMediaLightboxUI();
+    if (targetModal !== 'noteForm') closeNoteFormUI();
+    if (state) {
+      if (state.dashboard && state.dashboard !== currentDashboard) {
+        currentDashboard = state.dashboard;
+        localStorage.setItem('currentDashboard', currentDashboard);
+        document.getElementById('dash-btn-english').classList.toggle('active', currentDashboard === 'english');
+        document.getElementById('dash-btn-company').classList.toggle('active', currentDashboard === 'company');
+        const dash = DASHBOARDS[currentDashboard];
+        document.getElementById('dashboard-tabs').innerHTML = dash.tabs.map(t => `<button class="tab-btn" onclick="switchTab('${t.id}')">${t.label}</button>`).join('');
+      }
+      if (state.tab) switchTab(state.tab, true);
+    }
+  } finally {
+    isRestoringHistory = false;
+  }
+});
 
 // ── Phrases ──
 function renderPhrases() {
@@ -2447,12 +2482,24 @@ function openNoteForm(editId) {
     </div>`;
   renderMediaFormPreview();
   box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  if (!isRestoringHistory) {
+    history.pushState({ dashboard: currentDashboard, tab: currentTabName, modal: 'noteForm' }, '', location.href);
+  }
 }
 
-function closeNoteForm() {
+function closeNoteFormUI() {
   document.getElementById('notes-form-box').innerHTML = '';
   notesEditingId = null;
   notesFormMediaList = [];
+}
+
+function closeNoteForm() {
+  if (history.state && history.state.modal === 'noteForm') {
+    history.back();
+  } else {
+    closeNoteFormUI();
+  }
 }
 
 function blobToBase64(blob) {
@@ -2738,11 +2785,23 @@ function openMediaLightbox(url, type) {
     setupLightboxZoom();
   }
   box.classList.remove('hidden');
+
+  if (!isRestoringHistory) {
+    history.pushState({ dashboard: currentDashboard, tab: currentTabName, modal: 'lightbox' }, '', location.href);
+  }
+}
+
+function closeMediaLightboxUI() {
+  document.getElementById('media-lightbox').classList.add('hidden');
+  document.getElementById('media-lightbox-content').innerHTML = '';
 }
 
 function closeMediaLightbox() {
-  document.getElementById('media-lightbox').classList.add('hidden');
-  document.getElementById('media-lightbox-content').innerHTML = '';
+  if (history.state && history.state.modal === 'lightbox') {
+    history.back();
+  } else {
+    closeMediaLightboxUI();
+  }
 }
 
 function applyLightboxTransform() {
