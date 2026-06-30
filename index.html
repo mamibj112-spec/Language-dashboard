@@ -2381,11 +2381,12 @@ function renderMediaFormPreview() {
       let thumb;
       if (m.type === 'image') thumb = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;">`;
       else if (m.type === 'video') thumb = `<video src="${url}" style="width:100%;height:100%;object-fit:cover;"></video>`;
+      else if (m.type === 'audio') thumb = `<div style="font-size:28px;">🎙️</div>`;
       else thumb = `<div style="font-size:28px;">${DOC_EXT_ICON[fileExt(m.name)] || '📄'}</div>`;
       return `
         <div style="position:relative;width:88px;">
           <div style="width:88px;height:88px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;">${thumb}</div>
-          <div style="font-size:10px;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.name || (m.type === 'image' ? '사진' : m.type === 'video' ? '동영상' : '문서')}</div>
+          <div style="font-size:10px;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.name || (m.type === 'image' ? '사진' : m.type === 'video' ? '동영상' : m.type === 'audio' ? '음성' : '문서')}</div>
           <button onclick="removeNoteMediaAt(${i})" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;border:none;font-size:12px;cursor:pointer;">✕</button>
         </div>`;
     }).join('')}
@@ -2425,6 +2426,47 @@ async function addNoteMediaFile(file) {
     notesFormMediaList.push({ type: 'document', blob: file, mime: file.type, name: file.name });
   }
   renderMediaFormPreview();
+}
+
+// ── 음성 녹음 ──
+let voiceMediaRecorder = null;
+let voiceRecordedChunks = [];
+let voiceIsRecording = false;
+
+function updateVoiceRecordButton() {
+  const btn = document.getElementById('notes-voice-btn');
+  if (!btn) return;
+  btn.textContent = voiceIsRecording ? '⏹ 녹음 중지 (탭해서 종료)' : '🎙️ 음성 녹음';
+  btn.style.background = voiceIsRecording ? 'linear-gradient(135deg,#ef4444,#f97316)' : 'rgba(255,255,255,0.08)';
+}
+
+async function toggleVoiceRecording() {
+  if (voiceIsRecording) {
+    voiceMediaRecorder.stop();
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    voiceRecordedChunks = [];
+    const mimeType = ['audio/webm', 'audio/mp4', 'audio/ogg'].find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
+    voiceMediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    voiceMediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) voiceRecordedChunks.push(e.data); };
+    voiceMediaRecorder.onstop = () => {
+      const blob = new Blob(voiceRecordedChunks, { type: voiceMediaRecorder.mimeType || 'audio/webm' });
+      stream.getTracks().forEach(t => t.stop());
+      voiceIsRecording = false;
+      updateVoiceRecordButton();
+      if (blob.size > 0) {
+        notesFormMediaList.push({ type: 'audio', blob, mime: blob.type, name: `voice-${Date.now()}.webm` });
+        renderMediaFormPreview();
+      }
+    };
+    voiceMediaRecorder.start();
+    voiceIsRecording = true;
+    updateVoiceRecordButton();
+  } catch (err) {
+    alert('마이크를 사용할 수 없어요: ' + err.message);
+  }
 }
 
 async function handleNoteMediaInput(input) {
@@ -2475,9 +2517,10 @@ function openNoteForm(editId) {
         📎 문서 첨부 (워드·PPT·엑셀·PDF)
         <input type="file" accept=".doc,.docx,.ppt,.pptx,.pdf,.xls,.xlsx,.txt" multiple onchange="handleNoteMediaInput(this)" style="display:none;">
       </label>
+      <button type="button" id="notes-voice-btn" class="complete-btn" onclick="toggleVoiceRecording()" style="margin-top:8px;background:rgba(255,255,255,0.08);">🎙️ 음성 녹음</button>
       <div id="notes-form-media-preview"></div>
       <div style="display:flex;gap:8px;margin-top:12px;">
-        <button class="complete-btn" onclick="saveNote()">💾 저장</button>
+        <button class="complete-btn" id="notes-save-btn" onclick="saveNote()">💾 저장</button>
         <button class="complete-btn" onclick="closeNoteForm()" style="background:rgba(255,255,255,0.08);">취소</button>
       </div>
     </div>`;
@@ -2538,25 +2581,51 @@ async function analyzeImageWithGemini(blob, mime) {
   }
 }
 
+async function analyzeAudioWithGemini(blob, mime) {
+  if (!geminiApiKey) return '';
+  try {
+    const base64 = await blobToBase64(blob);
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          role: 'user',
+          parts: [
+            { text: '이 음성 파일은 회사 업무/학습 관련 음성 메모일 수 있습니다. 들리는 내용을 최대한 정확하게 받아쓰고(한국어/영어 구분 없이), 마지막에 2~3문장으로 요약해주세요. 다른 설명 없이 결과만 작성해주세요.' },
+            { inlineData: { mimeType: mime || 'audio/webm', data: base64 } }
+          ]
+        }]
+      })
+    });
+    if (!res.ok) return '';
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  } catch {
+    return '';
+  }
+}
+
 async function saveNote() {
   const title = document.getElementById('notes-form-title').value.trim();
   const content = document.getElementById('notes-form-content').value.trim();
   const tags = document.getElementById('notes-form-tags').value.split(',').map(t => t.trim()).filter(Boolean);
   if (!title && !content) { alert('제목이나 내용을 입력해주세요.'); return; }
 
-  const saveBtn = document.querySelector('#notes-form-box .complete-btn');
+  const saveBtn = document.getElementById('notes-save-btn');
 
-  const imagesToAnalyze = notesFormMediaList.filter(m => m.type === 'image' && !m.aiSummary);
-  if (imagesToAnalyze.length && saveBtn) {
+  const itemsToAnalyze = notesFormMediaList.filter(m => (m.type === 'image' || m.type === 'audio') && !m.aiSummary);
+  if (itemsToAnalyze.length && saveBtn) {
     let done = 0;
     saveBtn.disabled = true;
-    for (const m of imagesToAnalyze) {
-      saveBtn.textContent = `🔎 이미지 분석 중... (${++done}/${imagesToAnalyze.length})`;
-      m.aiSummary = await analyzeImageWithGemini(m.blob, m.mime);
+    for (const m of itemsToAnalyze) {
+      saveBtn.textContent = `🔎 ${m.type === 'audio' ? '음성 받아쓰는' : '이미지 분석'} 중... (${++done}/${itemsToAnalyze.length})`;
+      m.aiSummary = m.type === 'audio' ? await analyzeAudioWithGemini(m.blob, m.mime) : await analyzeImageWithGemini(m.blob, m.mime);
     }
   }
   const aiSummary = notesFormMediaList
-    .filter(m => m.type === 'image' && m.aiSummary)
+    .filter(m => (m.type === 'image' || m.type === 'audio') && m.aiSummary)
     .map(m => m.aiSummary)
     .join('\n---\n');
 
@@ -2594,7 +2663,7 @@ async function askNotes() {
     const date = new Date(n.createdAt);
     const dateStr = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
     const docNames = getNoteMediaList(n).filter(m => m.type === 'document').map(m => m.name).join(', ');
-    return `[기록 ${i + 1}] 제목: ${n.title || '(제목없음)'} / 날짜: ${dateStr} / 태그: ${(n.tags || []).join(', ') || '없음'}\n내용: ${n.content || '(없음)'}${n.aiSummary ? `\n이미지 분석: ${n.aiSummary}` : ''}${docNames ? `\n첨부 문서(내용은 읽을 수 없음, 파일명만 참고): ${docNames}` : ''}`;
+    return `[기록 ${i + 1}] 제목: ${n.title || '(제목없음)'} / 날짜: ${dateStr} / 태그: ${(n.tags || []).join(', ') || '없음'}\n내용: ${n.content || '(없음)'}${n.aiSummary ? `\n사진/음성 분석: ${n.aiSummary}` : ''}${docNames ? `\n첨부 문서(내용은 읽을 수 없음, 파일명만 참고): ${docNames}` : ''}`;
   }).join('\n\n');
 
   const prompt = `다음은 사용자가 저장해둔 회사 공부/업무 기록들입니다.
@@ -2668,7 +2737,7 @@ function renderCompanyDashboard() {
       companyDashObjectUrls.set(n.id, url);
       thumb = firstMedia.type === 'image'
         ? `<img src="${url}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;flex-shrink:0;">`
-        : `<div style="width:48px;height:48px;border-radius:8px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${firstMedia.type === 'video' ? '🎬' : (DOC_EXT_ICON[fileExt(firstMedia.name)] || '📄')}</div>`;
+        : `<div style="width:48px;height:48px;border-radius:8px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${firstMedia.type === 'video' ? '🎬' : firstMedia.type === 'audio' ? '🎙️' : (DOC_EXT_ICON[fileExt(firstMedia.name)] || '📄')}</div>`;
     }
     return `
       <div class="tab-btn" onclick="switchTab('notes')" style="display:flex;align-items:center;gap:10px;text-align:left;width:100%;box-sizing:border-box;padding:10px 12px;margin-bottom:8px;">
@@ -2756,6 +2825,11 @@ function renderNotesList() {
         <div style="position:relative;">
           <video src="${url}" controls style="max-width:240px;border-radius:10px;display:block;"></video>
           <a href="${url}" download="${dlName('video')}" style="position:absolute;bottom:4px;right:4px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:13px;">⬇️</a>
+        </div>`;
+      if (m.type === 'audio') return `
+        <div style="display:flex;align-items:center;gap:6px;">
+          <audio src="${url}" controls style="height:36px;max-width:220px;"></audio>
+          <a href="${url}" download="${m.name || 'voice.webm'}" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.1);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:13px;flex-shrink:0;">⬇️</a>
         </div>`;
       return `<a href="${url}" download="${m.name || 'document'}" style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;text-decoration:none;font-size:12px;">${DOC_EXT_ICON[fileExt(m.name)] || '📄'} ${m.name || '문서'} <span style="color:#94a3b8;">(${formatBytes(m.blob.size)})</span></a>`;
     }).join('')}</div>` : '';
