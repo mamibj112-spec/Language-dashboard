@@ -593,6 +593,20 @@
       <div id="notes-tag-filter" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
       <button class="complete-btn" onclick="openNoteForm()">➕ 새 기록 추가</button>
     </div>
+
+    <div class="card" style="margin-top:10px;">
+      <div class="card-header">
+        <span class="card-emoji">🤔</span>
+        <div>
+          <div class="card-title">내 기록에게 질문하기</div>
+          <div class="card-sub">저장된 기록들을 바탕으로 AI가 답해드려요</div>
+        </div>
+      </div>
+      <input type="text" id="notes-ask-input" placeholder="예: VLOOKUP 어떻게 쓰는지 정리한 거 있어?" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;margin-bottom:8px;" onkeydown="if(event.key==='Enter')askNotes()">
+      <button class="complete-btn" onclick="askNotes()">✨ 질문하기</button>
+      <div id="notes-ask-result"></div>
+    </div>
+
     <div id="notes-form-box"></div>
     <div id="notes-list"></div>
   </div>
@@ -2368,6 +2382,41 @@ function closeNoteForm() {
   notesFormMedia = null;
 }
 
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function analyzeImageWithGemini(blob, mime) {
+  if (!geminiApiKey) return '';
+  try {
+    const base64 = await blobToBase64(blob);
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          role: 'user',
+          parts: [
+            { text: '이 이미지는 회사 업무/학습 관련 자료(화면 캡처, 문서, 메모, 칠판 등)일 수 있습니다. 이미지에 보이는 텍스트는 최대한 그대로 옮겨 적고, 내용을 2~3문장으로 요약해주세요. 다른 설명 없이 결과만 작성해주세요.' },
+            { inlineData: { mimeType: mime || 'image/jpeg', data: base64 } }
+          ]
+        }]
+      })
+    });
+    if (!res.ok) return '';
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  } catch {
+    return '';
+  }
+}
+
 async function saveNote() {
   const title = document.getElementById('notes-form-title').value.trim();
   const content = document.getElementById('notes-form-content').value.trim();
@@ -2375,16 +2424,25 @@ async function saveNote() {
   if (!title && !content) { alert('제목이나 내용을 입력해주세요.'); return; }
 
   const saveBtn = document.querySelector('#notes-form-box .complete-btn');
-  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ 저장 중...'; }
+  const existing = notesEditingId ? notesCache.find(n => n.id === notesEditingId) : null;
+  const mediaChanged = !existing || existing.media !== notesFormMedia;
 
+  let aiSummary = existing ? existing.aiSummary : '';
+  if (notesFormMedia && notesFormMedia.type === 'image' && mediaChanged) {
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '🔎 이미지 분석 중...'; }
+    aiSummary = await analyzeImageWithGemini(notesFormMedia.blob, notesFormMedia.mime);
+  } else if (!notesFormMedia) {
+    aiSummary = '';
+  }
+
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ 저장 중...'; }
   try {
     if (notesEditingId) {
-      const existing = notesCache.find(n => n.id === notesEditingId);
-      await idbPutNote(Object.assign({}, existing, { title, content, tags, media: notesFormMedia }));
+      await idbPutNote(Object.assign({}, existing, { title, content, tags, media: notesFormMedia, aiSummary }));
     } else {
       await idbPutNote({
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-        title, content, tags, media: notesFormMedia,
+        title, content, tags, media: notesFormMedia, aiSummary,
         createdAt: new Date().toISOString(),
       });
     }
@@ -2394,6 +2452,48 @@ async function saveNote() {
   } catch (err) {
     alert('저장에 실패했어요: ' + err.message + (err.name === 'QuotaExceededError' ? ' (저장공간이 부족해요)' : ''));
     if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 저장'; }
+  }
+}
+
+async function askNotes() {
+  const q = document.getElementById('notes-ask-input').value.trim();
+  const resultEl = document.getElementById('notes-ask-result');
+  if (!q) return;
+  if (!geminiApiKey) { resultEl.innerHTML = `<div style="margin-top:10px;color:#fbbf24;">⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요.</div>`; return; }
+  if (!notesCache.length) { resultEl.innerHTML = `<div style="margin-top:10px;color:#fbbf24;">아직 저장된 기록이 없어요.</div>`; return; }
+
+  resultEl.innerHTML = `<div style="margin-top:10px;color:#94a3b8;">⏳ 기록을 살펴보는 중...</div>`;
+
+  const context = notesCache.map((n, i) => {
+    const date = new Date(n.createdAt);
+    const dateStr = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+    return `[기록 ${i + 1}] 제목: ${n.title || '(제목없음)'} / 날짜: ${dateStr} / 태그: ${(n.tags || []).join(', ') || '없음'}\n내용: ${n.content || '(없음)'}${n.aiSummary ? `\n이미지 분석: ${n.aiSummary}` : ''}`;
+  }).join('\n\n');
+
+  const prompt = `다음은 사용자가 저장해둔 회사 공부/업무 기록들입니다.
+
+${context}
+
+사용자 질문: "${q}"
+
+위 기록들을 바탕으로 답변해주세요. 답변 마지막에 어떤 기록(제목)을 참고했는지 알려주세요. 기록에서 답을 찾을 수 없으면 솔직히 "저장된 기록에서 찾을 수 없어요"라고 말해주세요.`;
+
+  try {
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
+    });
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error?.message || 'API Error');
+    }
+    const data = await res.json();
+    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || '답변을 받지 못했어요.';
+    resultEl.innerHTML = `<div style="margin-top:10px;padding:12px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);font-size:14px;line-height:1.7;white-space:pre-wrap;">${answer}</div>`;
+  } catch (err) {
+    resultEl.innerHTML = `<div style="margin-top:10px;color:#f87171;">❌ 오류: ${err.message}</div>`;
   }
 }
 
