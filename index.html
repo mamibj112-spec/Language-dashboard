@@ -621,6 +621,7 @@
 <!-- ── 미디어 라이트박스 (확대/축소 보기) ── -->
 <div id="media-lightbox" class="hidden" onclick="if(event.target.id==='media-lightbox')closeMediaLightbox()" style="position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:pinch-zoom;">
   <button onclick="closeMediaLightbox()" style="position:absolute;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);color:#fff;border:none;font-size:20px;cursor:pointer;z-index:1;">✕</button>
+  <a id="media-lightbox-download" onclick="event.stopPropagation()" style="position:absolute;top:16px;left:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:18px;z-index:1;">⬇️</a>
   <div id="media-lightbox-content" style="max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;"></div>
 </div>
 
@@ -2745,8 +2746,17 @@ function renderNotesList() {
     const mediaHtml = mediaList.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">${mediaList.map(m => {
       const url = URL.createObjectURL(m.blob);
       notesObjectUrls.push(url);
-      if (m.type === 'image') return `<img src="${url}" onclick="openMediaLightbox('${url}','image')" style="max-width:180px;max-height:180px;border-radius:10px;cursor:zoom-in;">`;
-      if (m.type === 'video') return `<video src="${url}" controls style="max-width:240px;border-radius:10px;"></video>`;
+      const dlName = (type) => m.name || (type === 'image' ? 'photo.jpg' : 'video.mp4');
+      if (m.type === 'image') return `
+        <div style="position:relative;">
+          <img src="${url}" onclick="openMediaLightbox('${url}','image','${(m.name || 'photo.jpg').replace(/'/g, "\\'")}')" style="max-width:180px;max-height:180px;border-radius:10px;cursor:zoom-in;display:block;">
+          <a href="${url}" download="${dlName('image')}" onclick="event.stopPropagation()" style="position:absolute;bottom:4px;right:4px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:13px;">⬇️</a>
+        </div>`;
+      if (m.type === 'video') return `
+        <div style="position:relative;">
+          <video src="${url}" controls style="max-width:240px;border-radius:10px;display:block;"></video>
+          <a href="${url}" download="${dlName('video')}" style="position:absolute;bottom:4px;right:4px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:13px;">⬇️</a>
+        </div>`;
       return `<a href="${url}" download="${m.name || 'document'}" style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;text-decoration:none;font-size:12px;">${DOC_EXT_ICON[fileExt(m.name)] || '📄'} ${m.name || '문서'} <span style="color:#94a3b8;">(${formatBytes(m.blob.size)})</span></a>`;
     }).join('')}</div>` : '';
     return `
@@ -2774,7 +2784,7 @@ let lightboxPinchStartDist = 0;
 let lightboxPinchStartScale = 1;
 let lightboxDragStart = null;
 
-function openMediaLightbox(url, type) {
+function openMediaLightbox(url, type, name) {
   lightboxScale = 1; lightboxPanX = 0; lightboxPanY = 0;
   const box = document.getElementById('media-lightbox');
   const content = document.getElementById('media-lightbox-content');
@@ -2784,6 +2794,9 @@ function openMediaLightbox(url, type) {
     content.innerHTML = `<img id="lightbox-img" src="${url}" style="max-width:90vw;max-height:90vh;object-fit:contain;touch-action:none;cursor:zoom-in;transform-origin:center center;">`;
     setupLightboxZoom();
   }
+  const dlBtn = document.getElementById('media-lightbox-download');
+  dlBtn.href = url;
+  dlBtn.download = name || (type === 'video' ? 'video.mp4' : 'photo.jpg');
   box.classList.remove('hidden');
 
   if (!isRestoringHistory) {
