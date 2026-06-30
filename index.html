@@ -1013,21 +1013,49 @@ function init() {
 
 // ── Speak ──
 let _audio = null;
-function speak(text) {
-  // Google Translate TTS — works reliably in Android WebView
-  if (_audio) { _audio.pause(); _audio = null; }
-  const url = 'https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=en-US&client=tw-ob&q=' + encodeURIComponent(text);
+let _speakQueue = [];
+
+function splitForTTS(text, maxLen) {
+  // Google Translate TTS rejects/truncates requests over ~200 chars, so split on sentence boundaries
+  const sentences = text.match(/[^.!?]+[.!?]*\s*/g) || [text];
+  const chunks = [];
+  let cur = '';
+  sentences.forEach(s => {
+    if ((cur + s).length > maxLen && cur) {
+      chunks.push(cur.trim());
+      cur = s;
+    } else {
+      cur += s;
+    }
+  });
+  if (cur.trim()) chunks.push(cur.trim());
+  return chunks.filter(c => c.length > 0);
+}
+
+function _playNextChunk() {
+  const next = _speakQueue.shift();
+  if (!next) { _audio = null; return; }
+  const url = 'https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=en-US&client=tw-ob&q=' + encodeURIComponent(next);
   _audio = new Audio(url);
+  _audio.onended = _playNextChunk;
   _audio.play().catch(() => {
     // fallback to Web Speech API on desktop
-    if (!window.speechSynthesis) return;
+    if (!window.speechSynthesis) { _playNextChunk(); return; }
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
+    const u = new SpeechSynthesisUtterance(next);
     u.lang = 'en-US'; u.rate = 0.9;
     const v = window.speechSynthesis.getVoices().find(x => x.lang.startsWith('en'));
     if (v) u.voice = v;
+    u.onend = _playNextChunk;
     window.speechSynthesis.speak(u);
   });
+}
+
+function speak(text) {
+  if (_audio) { _audio.pause(); _audio = null; }
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  _speakQueue = splitForTTS(text, 190);
+  _playNextChunk();
 }
 
 // ── Tab switch ──
