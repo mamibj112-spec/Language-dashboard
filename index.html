@@ -2310,9 +2310,7 @@ function compressImageToBlob(file, maxW, quality) {
   });
 }
 
-async function handleNoteMediaInput(input) {
-  const file = input.files && input.files[0];
-  if (!file) return;
+async function processNoteMediaFile(file) {
   const preview = document.getElementById('notes-form-media-preview');
   const isVideo = file.type.startsWith('video/');
 
@@ -2345,6 +2343,26 @@ async function handleNoteMediaInput(input) {
   }
 }
 
+async function handleNoteMediaInput(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  await processNoteMediaFile(file);
+}
+
+async function handleNotePaste(event) {
+  const items = event.clipboardData && event.clipboardData.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      event.preventDefault();
+      const file = item.getAsFile();
+      if (file) await processNoteMediaFile(file);
+      return;
+    }
+  }
+  // no image in clipboard — let normal text paste proceed
+}
+
 function openNoteForm(editId) {
   notesEditingId = editId || null;
   notesFormMedia = null;
@@ -2364,7 +2382,7 @@ function openNoteForm(editId) {
     <div class="card">
       <div style="font-weight:700;margin-bottom:10px;">${editing ? '✏️ 기록 수정' : '➕ 새 기록'}</div>
       <input type="text" id="notes-form-title" placeholder="제목" value="${editing ? editing.title.replace(/"/g, '&quot;') : ''}" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;margin-bottom:8px;">
-      <textarea id="notes-form-content" placeholder="배운 내용을 적어주세요" rows="5" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;margin-bottom:8px;resize:vertical;">${editing ? editing.content : ''}</textarea>
+      <textarea id="notes-form-content" placeholder="배운 내용을 적어주세요 (캡처한 화면은 여기에 Ctrl+V로 붙여넣기 가능)" rows="5" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;margin-bottom:8px;resize:vertical;" onpaste="handleNotePaste(event)">${editing ? editing.content : ''}</textarea>
       <input type="text" id="notes-form-tags" placeholder="태그 (쉼표로 구분, 예: 엑셀, 회의)" value="${editing && editing.tags ? editing.tags.join(', ') : ''}" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;margin-bottom:8px;">
       <div style="display:flex;gap:8px;">
         <label class="complete-btn" style="flex:1;display:block;text-align:center;background:rgba(255,255,255,0.08);cursor:pointer;">
