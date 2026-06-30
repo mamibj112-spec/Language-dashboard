@@ -436,6 +436,7 @@
     <button class="tab-btn" onclick="switchTab('pattern')">📐 패턴</button>
     <button class="tab-btn" onclick="switchTab('ppt')">📊 PPT</button>
     <button class="tab-btn" onclick="switchTab('opic')">🎤 오픽</button>
+    <button class="tab-btn" onclick="switchTab('notes')">📒 기록</button>
   </div>
 
   <!-- ── 표현 Tab ── -->
@@ -580,6 +581,24 @@
       <div id="opic-stage-content"></div>
     </div>
     <div id="opic-result"></div>
+  </div>
+
+  <!-- ── 기록 Tab ── -->
+  <div id="tab-notes" class="hidden">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-emoji">📒</span>
+        <div>
+          <div class="card-title">회사 공부 기록</div>
+          <div class="card-sub">배운 내용, 사진을 저장하고 키워드로 검색해요</div>
+        </div>
+      </div>
+      <input type="text" id="notes-search" placeholder="🔍 제목·내용·태그로 검색" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;margin-bottom:10px;" oninput="renderNotesList()">
+      <div id="notes-tag-filter" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+      <button class="complete-btn" onclick="openNoteForm()">➕ 새 기록 추가</button>
+    </div>
+    <div id="notes-form-box"></div>
+    <div id="notes-list"></div>
   </div>
 
 </div>
@@ -1059,7 +1078,7 @@ function speak(text) {
 }
 
 // ── Tab switch ──
-const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','ppt','opic'];
+const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','ppt','opic','notes'];
 function switchTab(name) {
   TAB_NAMES.forEach(t => {
     document.getElementById('tab-' + t).classList.add('hidden');
@@ -1076,9 +1095,14 @@ function switchTab(name) {
     opicInitialized = true;
     renderOpicTopics();
   }
+  if (name === 'notes' && !notesInitialized) {
+    notesInitialized = true;
+    notesLoadAll().then(renderNotesList);
+  }
 }
 let pptInitialized = false;
 let opicInitialized = false;
+let notesInitialized = false;
 
 // ── Phrases ──
 function renderPhrases() {
@@ -2133,6 +2157,263 @@ function toggleDialogue(i) {
   renderDialogue();
 }
 
+// ── 기록 (회사 공부 메모 + 사진/동영상, IndexedDB 저장) ──
+const NOTES_KEY = 'workNotes'; // legacy localStorage key, migrated then removed
+let notesDB = null;
+let notesCache = [];
+let notesFormMedia = null; // { type: 'image'|'video', blob, mime } | null
+let notesEditingId = null;
+let notesActiveTagFilter = null;
+const notesObjectUrls = new Map(); // id -> objectURL, so we can revoke on re-render
+
+function openNotesDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('workNotesDB', 1);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('notes')) db.createObjectStore('notes', { keyPath: 'id' });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function getNotesDB() {
+  if (!notesDB) notesDB = await openNotesDB();
+  return notesDB;
+}
+async function idbGetAllNotes() {
+  const db = await getNotesDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('notes', 'readonly');
+    const req = tx.objectStore('notes').getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbPutNote(note) {
+  const db = await getNotesDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('notes', 'readwrite');
+    tx.objectStore('notes').put(note);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function idbDeleteNote(id) {
+  const db = await getNotesDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('notes', 'readwrite');
+    tx.objectStore('notes').delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function migrateOldNotesIfNeeded() {
+  const raw = localStorage.getItem(NOTES_KEY);
+  if (!raw) return;
+  try {
+    const oldNotes = JSON.parse(raw);
+    for (const n of oldNotes) {
+      let media = null;
+      if (n.image) {
+        const blob = await (await fetch(n.image)).blob();
+        media = { type: 'image', blob, mime: blob.type || 'image/jpeg' };
+      }
+      await idbPutNote({ id: n.id, title: n.title, content: n.content, tags: n.tags || [], media, createdAt: n.createdAt });
+    }
+  } catch (e) { /* ignore malformed legacy data */ }
+  localStorage.removeItem(NOTES_KEY);
+}
+
+async function notesLoadAll() {
+  await migrateOldNotesIfNeeded();
+  notesCache = (await idbGetAllNotes()).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+function compressImageToBlob(file, maxW, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxW / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/jpeg', quality);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleNoteMediaInput(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const preview = document.getElementById('notes-form-media-preview');
+  const isVideo = file.type.startsWith('video/');
+
+  if (isVideo && file.size > 80 * 1024 * 1024) {
+    preview.innerHTML = `<div style="color:#f87171;font-size:13px;">❌ 동영상이 너무 커요 (80MB 이하만 가능). 더 짧게 찍어주세요.</div>`;
+    return;
+  }
+
+  preview.innerHTML = `<div style="color:#94a3b8;font-size:13px;">⏳ ${isVideo ? '동영상' : '이미지'} 처리 중...</div>`;
+  try {
+    if (isVideo) {
+      notesFormMedia = { type: 'video', blob: file, mime: file.type };
+    } else {
+      const blob = await compressImageToBlob(file, 1000, 0.75);
+      notesFormMedia = { type: 'image', blob, mime: 'image/jpeg' };
+    }
+    const url = URL.createObjectURL(notesFormMedia.blob);
+    preview.innerHTML = (isVideo
+      ? `<video src="${url}" controls style="max-width:100%;border-radius:10px;margin-top:8px;"></video>`
+      : `<img src="${url}" style="max-width:100%;border-radius:10px;margin-top:8px;">`)
+      + `<button class="tab-btn" onclick="notesFormMedia=null;document.getElementById('notes-form-media-preview').innerHTML='';" style="margin-top:6px;">🗑 제거</button>`;
+  } catch {
+    preview.innerHTML = `<div style="color:#f87171;font-size:13px;">❌ 파일을 불러오지 못했어요.</div>`;
+  }
+}
+
+function openNoteForm(editId) {
+  notesEditingId = editId || null;
+  notesFormMedia = null;
+  const editing = notesEditingId ? notesCache.find(n => n.id === notesEditingId) : null;
+  if (editing) notesFormMedia = editing.media || null;
+
+  const box = document.getElementById('notes-form-box');
+  let previewHtml = '';
+  if (editing && editing.media) {
+    const url = URL.createObjectURL(editing.media.blob);
+    previewHtml = editing.media.type === 'video'
+      ? `<video src="${url}" controls style="max-width:100%;border-radius:10px;margin-top:8px;"></video>`
+      : `<img src="${url}" style="max-width:100%;border-radius:10px;margin-top:8px;">`;
+  }
+
+  box.innerHTML = `
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:10px;">${editing ? '✏️ 기록 수정' : '➕ 새 기록'}</div>
+      <input type="text" id="notes-form-title" placeholder="제목" value="${editing ? editing.title.replace(/"/g, '&quot;') : ''}" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;margin-bottom:8px;">
+      <textarea id="notes-form-content" placeholder="배운 내용을 적어주세요" rows="5" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;margin-bottom:8px;resize:vertical;">${editing ? editing.content : ''}</textarea>
+      <input type="text" id="notes-form-tags" placeholder="태그 (쉼표로 구분, 예: 엑셀, 회의)" value="${editing && editing.tags ? editing.tags.join(', ') : ''}" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;margin-bottom:8px;">
+      <label class="complete-btn" style="display:block;text-align:center;background:rgba(255,255,255,0.08);cursor:pointer;">
+        📷 사진/동영상 추가
+        <input type="file" accept="image/*,video/*" capture="environment" onchange="handleNoteMediaInput(this)" style="display:none;">
+      </label>
+      <div id="notes-form-media-preview">${previewHtml}</div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="complete-btn" onclick="saveNote()">💾 저장</button>
+        <button class="complete-btn" onclick="closeNoteForm()" style="background:rgba(255,255,255,0.08);">취소</button>
+      </div>
+    </div>`;
+  box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function closeNoteForm() {
+  document.getElementById('notes-form-box').innerHTML = '';
+  notesEditingId = null;
+  notesFormMedia = null;
+}
+
+async function saveNote() {
+  const title = document.getElementById('notes-form-title').value.trim();
+  const content = document.getElementById('notes-form-content').value.trim();
+  const tags = document.getElementById('notes-form-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+  if (!title && !content) { alert('제목이나 내용을 입력해주세요.'); return; }
+
+  const saveBtn = document.querySelector('#notes-form-box .complete-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ 저장 중...'; }
+
+  try {
+    if (notesEditingId) {
+      const existing = notesCache.find(n => n.id === notesEditingId);
+      await idbPutNote(Object.assign({}, existing, { title, content, tags, media: notesFormMedia }));
+    } else {
+      await idbPutNote({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        title, content, tags, media: notesFormMedia,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    await notesLoadAll();
+    closeNoteForm();
+    renderNotesList();
+  } catch (err) {
+    alert('저장에 실패했어요: ' + err.message + (err.name === 'QuotaExceededError' ? ' (저장공간이 부족해요)' : ''));
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 저장'; }
+  }
+}
+
+async function deleteNote(id) {
+  if (!confirm('이 기록을 삭제할까요?')) return;
+  await idbDeleteNote(id);
+  await notesLoadAll();
+  renderNotesList();
+}
+
+function renderNotesList() {
+  notesObjectUrls.forEach(url => URL.revokeObjectURL(url));
+  notesObjectUrls.clear();
+
+  const query = (document.getElementById('notes-search').value || '').trim().toLowerCase();
+
+  const allTags = [...new Set(notesCache.flatMap(n => n.tags || []))];
+  const tagFilterEl = document.getElementById('notes-tag-filter');
+  tagFilterEl.innerHTML = allTags.map(tag => `
+    <button class="tab-btn${notesActiveTagFilter === tag ? ' active' : ''}" onclick="notesActiveTagFilter = notesActiveTagFilter === '${tag}' ? null : '${tag}'; renderNotesList()" style="flex:none;font-size:12px;padding:6px 10px;">#${tag}</button>
+  `).join('');
+
+  let filtered = notesCache;
+  if (query) {
+    filtered = filtered.filter(n =>
+      n.title.toLowerCase().includes(query) ||
+      n.content.toLowerCase().includes(query) ||
+      (n.tags || []).some(t => t.toLowerCase().includes(query))
+    );
+  }
+  if (notesActiveTagFilter) {
+    filtered = filtered.filter(n => (n.tags || []).includes(notesActiveTagFilter));
+  }
+
+  const listEl = document.getElementById('notes-list');
+  if (!filtered.length) {
+    listEl.innerHTML = `<div style="text-align:center;color:#94a3b8;padding:24px 0;font-size:13px;">${notesCache.length ? '검색 결과가 없어요.' : '아직 기록이 없어요. 위에서 추가해보세요!'}</div>`;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(n => {
+    const date = new Date(n.createdAt);
+    const dateStr = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+    let mediaHtml = '';
+    if (n.media && n.media.blob) {
+      const url = URL.createObjectURL(n.media.blob);
+      notesObjectUrls.set(n.id, url);
+      mediaHtml = n.media.type === 'video'
+        ? `<video src="${url}" controls style="max-width:100%;border-radius:10px;margin-top:8px;"></video>`
+        : `<img src="${url}" style="max-width:100%;border-radius:10px;margin-top:8px;">`;
+    }
+    return `
+      <div class="card" style="margin-top:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div style="font-weight:700;font-size:15px;">${n.title || '(제목 없음)'}</div>
+          <div style="font-size:12px;color:#94a3b8;white-space:nowrap;">${dateStr}</div>
+        </div>
+        ${n.content ? `<div style="font-size:13px;color:#e2e8f0;line-height:1.6;margin-top:6px;white-space:pre-wrap;">${n.content}</div>` : ''}
+        ${mediaHtml}
+        ${(n.tags || []).length ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">${n.tags.map(t => `<span style="font-size:11px;background:rgba(255,255,255,0.08);padding:3px 8px;border-radius:8px;color:#94a3b8;">#${t}</span>`).join('')}</div>` : ''}
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="tab-btn" onclick="openNoteForm('${n.id}')" style="font-size:12px;">✏️ 수정</button>
+          <button class="tab-btn" onclick="deleteNote('${n.id}')" style="font-size:12px;">🗑 삭제</button>
+        </div>
+      </div>`;
+  }).join('');
+}
 
 init();
 </script>
