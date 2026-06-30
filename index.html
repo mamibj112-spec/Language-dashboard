@@ -599,21 +599,27 @@
       <button class="complete-btn" onclick="openNoteForm()">➕ 새 기록 추가</button>
     </div>
 
-    <div class="card" style="margin-top:10px;">
-      <div class="card-header">
-        <span class="card-emoji">🤔</span>
-        <div>
-          <div class="card-title">내 기록에게 질문하기</div>
-          <div class="card-sub">저장된 기록들을 바탕으로 AI가 답해드려요</div>
-        </div>
-      </div>
-      <input type="text" id="notes-ask-input" placeholder="예: VLOOKUP 어떻게 쓰는지 정리한 거 있어?" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;margin-bottom:8px;" onkeydown="if(event.key==='Enter')askNotes()">
-      <button class="complete-btn" onclick="askNotes()">✨ 질문하기</button>
-      <div id="notes-ask-result"></div>
-    </div>
-
     <div id="notes-form-box"></div>
     <div id="notes-list"></div>
+  </div>
+
+  <!-- ── 질문하기(NotebookLM 스타일 채팅) Tab ── -->
+  <div id="tab-companyAsk" class="hidden">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-emoji">🧠</span>
+        <div>
+          <div class="card-title">기록에게 질문하기</div>
+          <div class="card-sub">저장된 기록을 바탕으로 대화하듯 물어보세요</div>
+        </div>
+      </div>
+    </div>
+    <div id="ask-chat-messages" style="display:flex;flex-direction:column;gap:10px;margin-top:10px;"></div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <input type="text" id="ask-chat-input" placeholder="예: VLOOKUP 어떻게 쓰는지 정리한 거 있어?" style="flex:1;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;" onkeydown="if(event.key==='Enter')sendAskChat()">
+      <button class="complete-btn" onclick="sendAskChat()" style="flex:none;width:auto;padding:0 18px;">전송</button>
+    </div>
+    <button class="tab-btn" onclick="resetAskChat()" style="margin-top:8px;">🔄 대화 초기화</button>
   </div>
 
 </div>
@@ -1102,7 +1108,7 @@ function speak(text) {
 }
 
 // ── Tab switch ──
-const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','ppt','opic','notes','companyDash'];
+const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','ppt','opic','notes','companyDash','companyAsk'];
 const DASHBOARDS = {
   english: {
     label: '📚 영어공부 대시보드',
@@ -1121,6 +1127,7 @@ const DASHBOARDS = {
     tabs: [
       { id: 'companyDash', label: '📊 대시보드' },
       { id: 'notes', label: '📒 기록' },
+      { id: 'companyAsk', label: '🧠 질문하기' },
       { id: 'ppt', label: '📊 PPT' },
     ],
   },
@@ -1174,11 +1181,16 @@ function switchTab(name, skipHistory) {
   if (name === 'companyDash') {
     notesLoadAll().then(renderCompanyDashboard);
   }
+  if (name === 'companyAsk' && !askChatInitialized) {
+    askChatInitialized = true;
+    renderAskChat();
+  }
   if (!skipHistory) pushHistoryState();
 }
 let pptInitialized = false;
 let opicInitialized = false;
 let notesInitialized = false;
+let askChatInitialized = false;
 
 // ── 뒤로가기 버튼 처리 (모달/탭/대시보드 순서로 닫고 이동) ──
 window.addEventListener('popstate', (e) => {
@@ -2650,47 +2662,99 @@ async function saveNote() {
   }
 }
 
-async function askNotes() {
-  const q = document.getElementById('notes-ask-input').value.trim();
-  const resultEl = document.getElementById('notes-ask-result');
-  if (!q) return;
-  if (!geminiApiKey) { resultEl.innerHTML = `<div style="margin-top:10px;color:#fbbf24;">⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요.</div>`; return; }
-  if (!notesCache.length) { resultEl.innerHTML = `<div style="margin-top:10px;color:#fbbf24;">아직 저장된 기록이 없어요.</div>`; return; }
+// ── 질문하기 (NotebookLM 스타일 채팅) ──
+let askChatMessages = []; // [{ role: 'user'|'assistant', text, sources?: string[] }]
+let askChatLoading = false;
 
-  resultEl.innerHTML = `<div style="margin-top:10px;color:#94a3b8;">⏳ 기록을 살펴보는 중...</div>`;
-
-  const context = notesCache.map((n, i) => {
+function buildNotesContext() {
+  return notesCache.map((n, i) => {
     const date = new Date(n.createdAt);
     const dateStr = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
     const docNames = getNoteMediaList(n).filter(m => m.type === 'document').map(m => m.name).join(', ');
     return `[기록 ${i + 1}] 제목: ${n.title || '(제목없음)'} / 날짜: ${dateStr} / 태그: ${(n.tags || []).join(', ') || '없음'}\n내용: ${n.content || '(없음)'}${n.aiSummary ? `\n사진/음성 분석: ${n.aiSummary}` : ''}${docNames ? `\n첨부 문서(내용은 읽을 수 없음, 파일명만 참고): ${docNames}` : ''}`;
   }).join('\n\n');
+}
 
-  const prompt = `다음은 사용자가 저장해둔 회사 공부/업무 기록들입니다.
+function goToNoteByTitle(title) {
+  switchTab('notes');
+  setTimeout(() => {
+    document.getElementById('notes-search').value = title;
+    renderNotesList();
+  }, 50);
+}
 
-${context}
+function renderAskChat() {
+  const el = document.getElementById('ask-chat-messages');
+  if (!askChatMessages.length) {
+    el.innerHTML = `<div style="text-align:center;color:#94a3b8;padding:24px 0;font-size:13px;">저장된 기록에 대해 무엇이든 물어보세요.<br>예: "VLOOKUP 어떻게 쓰는지 정리한 거 있어?"</div>`;
+    return;
+  }
+  el.innerHTML = askChatMessages.map(m => {
+    if (m.role === 'user') {
+      return `<div style="align-self:flex-end;max-width:85%;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;padding:10px 14px;border-radius:14px 14px 2px 14px;font-size:14px;line-height:1.6;">${m.text}</div>`;
+    }
+    const sourcesHtml = (m.sources && m.sources.length)
+      ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">${m.sources.map(s => `<button class="tab-btn" onclick="goToNoteByTitle('${s.replace(/'/g, "\\'")}')" style="font-size:11px;padding:4px 10px;">📒 ${s}</button>`).join('')}</div>`
+      : '';
+    return `<div style="align-self:flex-start;max-width:90%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);padding:10px 14px;border-radius:14px 14px 14px 2px;font-size:14px;line-height:1.7;white-space:pre-wrap;">${m.text}${sourcesHtml}</div>`;
+  }).join('') + (askChatLoading ? `<div style="align-self:flex-start;color:#94a3b8;font-size:13px;">⏳ 기록을 살펴보는 중...</div>` : '');
+  el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
 
-사용자 질문: "${q}"
+function resetAskChat() {
+  askChatMessages = [];
+  renderAskChat();
+}
 
-위 기록들을 바탕으로 답변해주세요. 답변 마지막에 어떤 기록(제목)을 참고했는지 알려주세요. 기록에서 답을 찾을 수 없으면 솔직히 "저장된 기록에서 찾을 수 없어요"라고 말해주세요.`;
+async function sendAskChat() {
+  const input = document.getElementById('ask-chat-input');
+  const q = input.value.trim();
+  if (!q || askChatLoading) return;
+  if (!geminiApiKey) { alert('⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요.'); return; }
+
+  await notesLoadAll();
+  if (!notesCache.length) { alert('아직 저장된 기록이 없어요.'); return; }
+
+  input.value = '';
+  askChatMessages.push({ role: 'user', text: q });
+  askChatLoading = true;
+  renderAskChat();
+
+  const systemPrompt = `당신은 사용자의 회사 공부/업무 기록을 바탕으로 답해주는 비서입니다. 아래는 사용자가 저장해둔 기록 전체입니다.
+
+${buildNotesContext()}
+
+위 기록들을 바탕으로 사용자와 대화하며 질문에 답하세요. 이전 대화 맥락도 참고해서 자연스럽게 이어가세요.
+반드시 다음 JSON 형식으로만 응답하세요 (다른 설명 없이 JSON만): {"answer": "답변 내용", "sources": ["참고한 기록 제목1", "참고한 기록 제목2"]}
+기록에서 답을 찾을 수 없으면 answer에 솔직히 찾을 수 없다고 쓰고 sources는 빈 배열로 주세요.`;
+
+  const contents = askChatMessages.map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.text }]
+  }));
 
   try {
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
     const res = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: systemPrompt }] }, contents })
     });
     if (!res.ok) {
       const errData = await res.json();
       throw new Error(errData.error?.message || 'API Error');
     }
     const data = await res.json();
-    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || '답변을 받지 못했어요.';
-    resultEl.innerHTML = `<div style="margin-top:10px;padding:12px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);font-size:14px;line-height:1.7;white-space:pre-wrap;">${answer}</div>`;
+    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    text = text.replace(/```json|```/g, '').trim();
+    let parsed;
+    try { parsed = JSON.parse(text); } catch { parsed = { answer: text, sources: [] }; }
+    askChatMessages.push({ role: 'assistant', text: parsed.answer || '답변을 받지 못했어요.', sources: parsed.sources || [] });
   } catch (err) {
-    resultEl.innerHTML = `<div style="margin-top:10px;color:#f87171;">❌ 오류: ${err.message}</div>`;
+    askChatMessages.push({ role: 'assistant', text: `❌ 오류: ${err.message}`, sources: [] });
   }
+  askChatLoading = false;
+  renderAskChat();
 }
 
 async function deleteNote(id) {
