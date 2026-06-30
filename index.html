@@ -541,6 +541,11 @@
     </div>
   </div>
 
+  <!-- ── 회사 대시보드 Tab ── -->
+  <div id="tab-companyDash" class="hidden">
+    <div id="company-dash-content"></div>
+  </div>
+
   <!-- ── PPT Tab ── -->
   <div id="tab-ppt" class="hidden">
     <div class="card">
@@ -1090,7 +1095,7 @@ function speak(text) {
 }
 
 // ── Tab switch ──
-const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','ppt','opic','notes'];
+const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','ppt','opic','notes','companyDash'];
 const DASHBOARDS = {
   english: {
     label: '📚 영어공부 대시보드',
@@ -1107,6 +1112,7 @@ const DASHBOARDS = {
   company: {
     label: '💼 회사 대시보드',
     tabs: [
+      { id: 'companyDash', label: '📊 대시보드' },
       { id: 'ppt', label: '📊 PPT' },
       { id: 'notes', label: '📒 기록' },
     ],
@@ -1147,6 +1153,9 @@ function switchTab(name) {
   if (name === 'notes' && !notesInitialized) {
     notesInitialized = true;
     notesLoadAll().then(renderNotesList);
+  }
+  if (name === 'companyDash') {
+    notesLoadAll().then(renderCompanyDashboard);
   }
 }
 let pptInitialized = false;
@@ -2502,6 +2511,83 @@ async function deleteNote(id) {
   await idbDeleteNote(id);
   await notesLoadAll();
   renderNotesList();
+}
+
+const companyDashObjectUrls = new Map();
+
+function renderCompanyDashboard() {
+  companyDashObjectUrls.forEach(url => URL.revokeObjectURL(url));
+  companyDashObjectUrls.clear();
+
+  const el = document.getElementById('company-dash-content');
+  const notes = notesCache;
+
+  const now = new Date();
+  const thisMonthCount = notes.filter(n => {
+    const d = new Date(n.createdAt);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+  const withMediaCount = notes.filter(n => n.media).length;
+
+  const tagCounts = {};
+  notes.forEach(n => (n.tags || []).forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
+  const topTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+  const statCard = (emoji, num, label) => `
+    <div style="flex:1;min-width:80px;text-align:center;padding:14px 8px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">
+      <div style="font-size:22px;font-weight:700;">${emoji} ${num}</div>
+      <div style="font-size:12px;color:#94a3b8;margin-top:4px;">${label}</div>
+    </div>`;
+
+  const recent = notes.slice(0, 5);
+  const recentHtml = recent.length ? recent.map(n => {
+    const date = new Date(n.createdAt);
+    const dateStr = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+    let thumb = '';
+    if (n.media && n.media.blob) {
+      const url = URL.createObjectURL(n.media.blob);
+      companyDashObjectUrls.set(n.id, url);
+      thumb = n.media.type === 'video'
+        ? `<div style="width:48px;height:48px;border-radius:8px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🎬</div>`
+        : `<img src="${url}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;flex-shrink:0;">`;
+    }
+    return `
+      <div class="tab-btn" onclick="switchTab('notes')" style="display:flex;align-items:center;gap:10px;text-align:left;width:100%;box-sizing:border-box;padding:10px 12px;margin-bottom:8px;">
+        ${thumb}
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n.title || '(제목 없음)'}</div>
+          <div style="font-size:11px;color:#94a3b8;">${dateStr}${(n.tags || []).length ? ' · ' + n.tags.map(t => '#' + t).join(' ') : ''}</div>
+        </div>
+      </div>`;
+  }).join('') : `<div style="text-align:center;color:#94a3b8;padding:20px 0;font-size:13px;">아직 기록이 없어요.</div>`;
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-emoji">📊</span>
+        <div>
+          <div class="card-title">회사 기록 한눈에 보기</div>
+          <div class="card-sub">저장해둔 기록들을 요약해서 보여드려요</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+        ${statCard('📒', notes.length, '전체 기록')}
+        ${statCard('🗓️', thisMonthCount, '이번 달')}
+        ${statCard('📷', withMediaCount, '사진/영상 첨부')}
+        ${statCard('🏷️', topTags.length, '사용 중인 태그')}
+      </div>
+      ${topTags.length ? `
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:6px;">자주 쓰는 태그</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
+          ${topTags.map(([tag, count]) => `<span style="font-size:12px;background:rgba(255,255,255,0.08);padding:4px 10px;border-radius:10px;color:#e2e8f0;">#${tag} ${count}</span>`).join('')}
+        </div>
+      ` : ''}
+    </div>
+    <div class="card" style="margin-top:10px;">
+      <div style="font-weight:700;margin-bottom:10px;">🕒 최근 기록</div>
+      ${recentHtml}
+      <button class="complete-btn" onclick="switchTab('notes')" style="margin-top:4px;background:rgba(255,255,255,0.08);">📒 전체 기록 보러가기</button>
+    </div>`;
 }
 
 function renderNotesList() {
