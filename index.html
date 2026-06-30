@@ -1058,6 +1058,25 @@ function init() {
   switchDashboard(currentDashboard, true);
 }
 
+// ── 미디어 공유/저장 ──
+async function shareMedia(url, filename) {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const file = new File([blob], filename, { type: blob.type });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: filename });
+      return;
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') console.warn('Share failed:', err.message);
+  }
+  // 공유 API 미지원 환경(PC 등) → 기존 다운로드 방식 폴백
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  a.click();
+}
+
 // ── Speak ──
 let _audio = null;
 let _speakQueue = [];
@@ -2905,19 +2924,19 @@ function renderNotesList() {
       if (m.type === 'image') return `
         <div style="position:relative;">
           <img src="${url}" onclick="openMediaLightbox('${url}','image','${(m.name || 'photo.jpg').replace(/'/g, "\\'")}')" style="max-width:180px;max-height:180px;border-radius:10px;cursor:zoom-in;display:block;">
-          <a href="${url}" download="${dlName('image')}" onclick="event.stopPropagation()" style="position:absolute;bottom:4px;right:4px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:13px;">⬇️</a>
+          <button onclick="event.stopPropagation();shareMedia('${url}','${(m.name||'photo.jpg').replace(/'/g,"\\'")}');" style="position:absolute;bottom:4px;right:4px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:13px;cursor:pointer;">⬇️</button>
         </div>`;
       if (m.type === 'video') return `
         <div style="position:relative;">
           <video src="${url}" controls style="max-width:240px;border-radius:10px;display:block;"></video>
-          <a href="${url}" download="${dlName('video')}" style="position:absolute;bottom:4px;right:4px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:13px;">⬇️</a>
+          <button onclick="shareMedia('${url}','${(m.name||'video.mp4').replace(/'/g,"\\'")}');" style="position:absolute;bottom:4px;right:4px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:13px;cursor:pointer;">⬇️</button>
         </div>`;
       if (m.type === 'audio') return `
         <div style="display:flex;align-items:center;gap:6px;">
           <audio src="${url}" controls style="height:36px;max-width:220px;"></audio>
-          <a href="${url}" download="${m.name || 'voice.webm'}" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.1);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:13px;flex-shrink:0;">⬇️</a>
+          <button onclick="shareMedia('${url}','${(m.name||'voice.webm').replace(/'/g,"\\'")}');" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.1);color:#fff;border:none;font-size:13px;cursor:pointer;flex-shrink:0;">⬇️</button>
         </div>`;
-      return `<a href="${url}" download="${m.name || 'document'}" style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;text-decoration:none;font-size:12px;">${DOC_EXT_ICON[fileExt(m.name)] || '📄'} ${m.name || '문서'} <span style="color:#94a3b8;">(${formatBytes(m.blob.size)})</span></a>`;
+      return `<button onclick="shareMedia('${url}','${(m.name||'document').replace(/'/g,"\\'")}');" style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:12px;cursor:pointer;">${DOC_EXT_ICON[fileExt(m.name)] || '📄'} ${m.name || '문서'} <span style="color:#94a3b8;">(${formatBytes(m.blob.size)})</span></button>`;
     }).join('')}</div>` : '';
     return `
       <div class="card" style="margin-top:10px;">
@@ -2955,8 +2974,8 @@ function openMediaLightbox(url, type, name) {
     setupLightboxZoom();
   }
   const dlBtn = document.getElementById('media-lightbox-download');
-  dlBtn.href = url;
-  dlBtn.download = name || (type === 'video' ? 'video.mp4' : 'photo.jpg');
+  const dlName = name || (type === 'video' ? 'video.mp4' : 'photo.jpg');
+  dlBtn.onclick = (e) => { e.stopPropagation(); shareMedia(url, dlName); };
   box.classList.remove('hidden');
 
   if (!isRestoringHistory) {
