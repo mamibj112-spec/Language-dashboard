@@ -2268,16 +2268,22 @@ async function handleNoteMediaInput(input) {
     if (isVideo) {
       notesFormMedia = { type: 'video', blob: file, mime: file.type };
     } else {
-      const blob = await compressImageToBlob(file, 1000, 0.75);
-      notesFormMedia = { type: 'image', blob, mime: 'image/jpeg' };
+      let blob;
+      try {
+        blob = await compressImageToBlob(file, 1000, 0.75);
+      } catch {
+        // 압축 실패 시(예: HEIC 등 디코딩 불가) 원본 그대로 저장
+        blob = file;
+      }
+      notesFormMedia = { type: 'image', blob, mime: blob.type || 'image/jpeg' };
     }
     const url = URL.createObjectURL(notesFormMedia.blob);
     preview.innerHTML = (isVideo
       ? `<video src="${url}" controls style="max-width:100%;border-radius:10px;margin-top:8px;"></video>`
       : `<img src="${url}" style="max-width:100%;border-radius:10px;margin-top:8px;">`)
       + `<button class="tab-btn" onclick="notesFormMedia=null;document.getElementById('notes-form-media-preview').innerHTML='';" style="margin-top:6px;">🗑 제거</button>`;
-  } catch {
-    preview.innerHTML = `<div style="color:#f87171;font-size:13px;">❌ 파일을 불러오지 못했어요.</div>`;
+  } catch (err) {
+    preview.innerHTML = `<div style="color:#f87171;font-size:13px;">❌ 파일을 불러오지 못했어요. (${err.message || err})</div>`;
   }
 }
 
@@ -2302,10 +2308,16 @@ function openNoteForm(editId) {
       <input type="text" id="notes-form-title" placeholder="제목" value="${editing ? editing.title.replace(/"/g, '&quot;') : ''}" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;margin-bottom:8px;">
       <textarea id="notes-form-content" placeholder="배운 내용을 적어주세요" rows="5" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;margin-bottom:8px;resize:vertical;">${editing ? editing.content : ''}</textarea>
       <input type="text" id="notes-form-tags" placeholder="태그 (쉼표로 구분, 예: 엑셀, 회의)" value="${editing && editing.tags ? editing.tags.join(', ') : ''}" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;margin-bottom:8px;">
-      <label class="complete-btn" style="display:block;text-align:center;background:rgba(255,255,255,0.08);cursor:pointer;">
-        📷 사진/동영상 추가
-        <input type="file" accept="image/*,video/*" capture="environment" onchange="handleNoteMediaInput(this)" style="display:none;">
-      </label>
+      <div style="display:flex;gap:8px;">
+        <label class="complete-btn" style="flex:1;display:block;text-align:center;background:rgba(255,255,255,0.08);cursor:pointer;">
+          📷 촬영하기
+          <input type="file" accept="image/*,video/*" capture="environment" onchange="handleNoteMediaInput(this)" style="display:none;">
+        </label>
+        <label class="complete-btn" style="flex:1;display:block;text-align:center;background:rgba(255,255,255,0.08);cursor:pointer;">
+          🖼 갤러리에서 선택
+          <input type="file" accept="image/*,video/*" onchange="handleNoteMediaInput(this)" style="display:none;">
+        </label>
+      </div>
       <div id="notes-form-media-preview">${previewHtml}</div>
       <div style="display:flex;gap:8px;margin-top:12px;">
         <button class="complete-btn" onclick="saveNote()">💾 저장</button>
