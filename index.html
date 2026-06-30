@@ -618,6 +618,12 @@
 
 </div>
 
+<!-- ── 미디어 라이트박스 (확대/축소 보기) ── -->
+<div id="media-lightbox" class="hidden" onclick="if(event.target.id==='media-lightbox')closeMediaLightbox()" style="position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:pinch-zoom;">
+  <button onclick="closeMediaLightbox()" style="position:absolute;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);color:#fff;border:none;font-size:20px;cursor:pointer;z-index:1;">✕</button>
+  <div id="media-lightbox-content" style="max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;"></div>
+</div>
+
 <script>
 // ── Data ──
 const TOPICS = [
@@ -2692,7 +2698,7 @@ function renderNotesList() {
     const mediaHtml = mediaList.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">${mediaList.map(m => {
       const url = URL.createObjectURL(m.blob);
       notesObjectUrls.push(url);
-      if (m.type === 'image') return `<img src="${url}" style="max-width:180px;max-height:180px;border-radius:10px;">`;
+      if (m.type === 'image') return `<img src="${url}" onclick="openMediaLightbox('${url}','image')" style="max-width:180px;max-height:180px;border-radius:10px;cursor:zoom-in;">`;
       if (m.type === 'video') return `<video src="${url}" controls style="max-width:240px;border-radius:10px;"></video>`;
       return `<a href="${url}" download="${m.name || 'document'}" style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;text-decoration:none;font-size:12px;">${DOC_EXT_ICON[fileExt(m.name)] || '📄'} ${m.name || '문서'} <span style="color:#94a3b8;">(${formatBytes(m.blob.size)})</span></a>`;
     }).join('')}</div>` : '';
@@ -2711,6 +2717,99 @@ function renderNotesList() {
         </div>
       </div>`;
   }).join('');
+}
+
+// ── 미디어 라이트박스 (확대/축소/팬) ──
+let lightboxScale = 1;
+let lightboxPanX = 0;
+let lightboxPanY = 0;
+let lightboxPinchStartDist = 0;
+let lightboxPinchStartScale = 1;
+let lightboxDragStart = null;
+
+function openMediaLightbox(url, type) {
+  lightboxScale = 1; lightboxPanX = 0; lightboxPanY = 0;
+  const box = document.getElementById('media-lightbox');
+  const content = document.getElementById('media-lightbox-content');
+  if (type === 'video') {
+    content.innerHTML = `<video src="${url}" controls autoplay style="max-width:90vw;max-height:90vh;"></video>`;
+  } else {
+    content.innerHTML = `<img id="lightbox-img" src="${url}" style="max-width:90vw;max-height:90vh;object-fit:contain;touch-action:none;cursor:zoom-in;transform-origin:center center;">`;
+    setupLightboxZoom();
+  }
+  box.classList.remove('hidden');
+}
+
+function closeMediaLightbox() {
+  document.getElementById('media-lightbox').classList.add('hidden');
+  document.getElementById('media-lightbox-content').innerHTML = '';
+}
+
+function applyLightboxTransform() {
+  const img = document.getElementById('lightbox-img');
+  if (img) img.style.transform = `translate(${lightboxPanX}px, ${lightboxPanY}px) scale(${lightboxScale})`;
+}
+
+function setupLightboxZoom() {
+  const img = document.getElementById('lightbox-img');
+  if (!img) return;
+
+  img.ondblclick = () => {
+    lightboxScale = lightboxScale > 1 ? 1 : 2.5;
+    lightboxPanX = 0; lightboxPanY = 0;
+    applyLightboxTransform();
+  };
+
+  img.onwheel = (e) => {
+    e.preventDefault();
+    lightboxScale = Math.min(5, Math.max(1, lightboxScale - e.deltaY * 0.0015));
+    applyLightboxTransform();
+  };
+
+  img.ontouchstart = (e) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lightboxPinchStartDist = Math.hypot(dx, dy);
+      lightboxPinchStartScale = lightboxScale;
+    } else if (e.touches.length === 1 && lightboxScale > 1) {
+      lightboxDragStart = { x: e.touches[0].clientX - lightboxPanX, y: e.touches[0].clientY - lightboxPanY };
+    }
+  };
+  img.ontouchmove = (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      lightboxScale = Math.min(5, Math.max(1, lightboxPinchStartScale * (dist / lightboxPinchStartDist)));
+      applyLightboxTransform();
+    } else if (e.touches.length === 1 && lightboxDragStart) {
+      e.preventDefault();
+      lightboxPanX = e.touches[0].clientX - lightboxDragStart.x;
+      lightboxPanY = e.touches[0].clientY - lightboxDragStart.y;
+      applyLightboxTransform();
+    }
+  };
+  img.ontouchend = () => { lightboxDragStart = null; };
+
+  // 데스크톱 드래그로 이동 (확대된 상태일 때)
+  img.onmousedown = (e) => {
+    if (lightboxScale <= 1) return;
+    e.preventDefault();
+    const start = { x: e.clientX - lightboxPanX, y: e.clientY - lightboxPanY };
+    const onMove = (ev) => {
+      lightboxPanX = ev.clientX - start.x;
+      lightboxPanY = ev.clientY - start.y;
+      applyLightboxTransform();
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
 }
 
 init();
