@@ -426,18 +426,14 @@
     <div class="stat-week" id="week-dots"></div>
   </div>
 
-  <!-- Tabs -->
-  <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('dialogue')">💬 대화</button>
-    <button class="tab-btn" onclick="switchTab('phrases')">📚 표현</button>
-    <button class="tab-btn" onclick="switchTab('vocab')">📖 단어</button>
-    <button class="tab-btn" onclick="switchTab('role')">🎭 롤플레잉</button>
-    <button class="tab-btn" onclick="switchTab('quiz')">🧠 퀴즈</button>
-    <button class="tab-btn" onclick="switchTab('pattern')">📐 패턴</button>
-    <button class="tab-btn" onclick="switchTab('ppt')">📊 PPT</button>
-    <button class="tab-btn" onclick="switchTab('opic')">🎤 오픽</button>
-    <button class="tab-btn" onclick="switchTab('notes')">📒 기록</button>
+  <!-- Dashboard Switcher -->
+  <div class="tabs" id="dashboard-switcher" style="margin-bottom:8px;">
+    <button class="tab-btn" id="dash-btn-english" onclick="switchDashboard('english')" style="flex:1;">📚 영어공부 대시보드</button>
+    <button class="tab-btn" id="dash-btn-company" onclick="switchDashboard('company')" style="flex:1;">💼 회사 대시보드</button>
   </div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="dashboard-tabs"></div>
 
   <!-- ── 표현 Tab ── -->
   <div id="tab-phrases" class="hidden">
@@ -502,7 +498,7 @@
   </div>
 
   <!-- ── 대화 Tab ── -->
-  <div id="tab-dialogue">
+  <div id="tab-dialogue" class="hidden">
     <div class="card">
       <div class="card-header">
         <span class="card-emoji" id="dialogue-emoji">☕</span>
@@ -1028,6 +1024,8 @@ function init() {
   renderQuiz();
   renderDialogue();
   renderPatterns();
+
+  switchDashboard(currentDashboard);
 }
 
 // ── Speak ──
@@ -1079,13 +1077,50 @@ function speak(text) {
 
 // ── Tab switch ──
 const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','ppt','opic','notes'];
+const DASHBOARDS = {
+  english: {
+    label: '📚 영어공부 대시보드',
+    tabs: [
+      { id: 'dialogue', label: '💬 대화' },
+      { id: 'phrases', label: '📚 표현' },
+      { id: 'vocab', label: '📖 단어' },
+      { id: 'role', label: '🎭 롤플레잉' },
+      { id: 'quiz', label: '🧠 퀴즈' },
+      { id: 'pattern', label: '📐 패턴' },
+      { id: 'opic', label: '🎤 오픽' },
+    ],
+  },
+  company: {
+    label: '💼 회사 대시보드',
+    tabs: [
+      { id: 'ppt', label: '📊 PPT' },
+      { id: 'notes', label: '📒 기록' },
+    ],
+  },
+};
+let currentDashboard = localStorage.getItem('currentDashboard') || 'english';
+
+function switchDashboard(name) {
+  currentDashboard = name;
+  localStorage.setItem('currentDashboard', name);
+  document.getElementById('dash-btn-english').classList.toggle('active', name === 'english');
+  document.getElementById('dash-btn-company').classList.toggle('active', name === 'company');
+
+  const tabsEl = document.getElementById('dashboard-tabs');
+  const dash = DASHBOARDS[name];
+  tabsEl.innerHTML = dash.tabs.map((t, i) => `<button class="tab-btn${i === 0 ? ' active' : ''}" onclick="switchTab('${t.id}')">${t.label}</button>`).join('');
+
+  switchTab(dash.tabs[0].id);
+}
+
 function switchTab(name) {
   TAB_NAMES.forEach(t => {
     document.getElementById('tab-' + t).classList.add('hidden');
   });
   document.getElementById('tab-' + name).classList.remove('hidden');
-  document.querySelectorAll('.tab-btn').forEach((b, i) => {
-    b.classList.toggle('active', TAB_NAMES[i] === name);
+  const dash = DASHBOARDS[currentDashboard];
+  document.querySelectorAll('#dashboard-tabs .tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', dash.tabs[i].id === name);
   });
   if (name === 'ppt' && !pptInitialized) {
     pptInitialized = true;
