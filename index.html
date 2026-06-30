@@ -2593,6 +2593,32 @@ async function analyzeImageWithGemini(blob, mime) {
   }
 }
 
+async function analyzePdfWithGemini(blob) {
+  if (!geminiApiKey) return '';
+  try {
+    const base64 = await blobToBase64(blob);
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          role: 'user',
+          parts: [
+            { text: '이 PDF는 회사 업무/학습 자료입니다. 주요 내용을 최대한 자세히 정리해주세요. 텍스트는 그대로 옮기고, 표나 핵심 항목은 구조적으로 정리해주세요. 다른 설명 없이 내용만 작성해주세요.' },
+            { inlineData: { mimeType: 'application/pdf', data: base64 } }
+          ]
+        }]
+      })
+    });
+    if (!res.ok) return '';
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  } catch {
+    return '';
+  }
+}
+
 async function analyzeAudioWithGemini(blob, mime) {
   if (!geminiApiKey) return '';
   try {
@@ -2627,17 +2653,21 @@ async function saveNote() {
 
   const saveBtn = document.getElementById('notes-save-btn');
 
-  const itemsToAnalyze = notesFormMediaList.filter(m => (m.type === 'image' || m.type === 'audio') && !m.aiSummary);
+  const isPdf = m => m.type === 'document' && (m.mime === 'application/pdf' || (m.name || '').toLowerCase().endsWith('.pdf'));
+  const itemsToAnalyze = notesFormMediaList.filter(m => (m.type === 'image' || m.type === 'audio' || isPdf(m)) && !m.aiSummary);
   if (itemsToAnalyze.length && saveBtn) {
     let done = 0;
     saveBtn.disabled = true;
     for (const m of itemsToAnalyze) {
-      saveBtn.textContent = `🔎 ${m.type === 'audio' ? '음성 받아쓰는' : '이미지 분석'} 중... (${++done}/${itemsToAnalyze.length})`;
-      m.aiSummary = m.type === 'audio' ? await analyzeAudioWithGemini(m.blob, m.mime) : await analyzeImageWithGemini(m.blob, m.mime);
+      const label = m.type === 'audio' ? '음성 받아쓰는' : isPdf(m) ? 'PDF 분석' : '이미지 분석';
+      saveBtn.textContent = `🔎 ${label} 중... (${++done}/${itemsToAnalyze.length})`;
+      m.aiSummary = m.type === 'audio' ? await analyzeAudioWithGemini(m.blob, m.mime)
+                  : isPdf(m) ? await analyzePdfWithGemini(m.blob)
+                  : await analyzeImageWithGemini(m.blob, m.mime);
     }
   }
   const aiSummary = notesFormMediaList
-    .filter(m => (m.type === 'image' || m.type === 'audio') && m.aiSummary)
+    .filter(m => (m.type === 'image' || m.type === 'audio' || isPdf(m)) && m.aiSummary)
     .map(m => m.aiSummary)
     .join('\n---\n');
 
@@ -2670,8 +2700,9 @@ function buildNotesContext() {
   return notesCache.map((n, i) => {
     const date = new Date(n.createdAt);
     const dateStr = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
-    const docNames = getNoteMediaList(n).filter(m => m.type === 'document').map(m => m.name).join(', ');
-    return `[기록 ${i + 1}] 제목: ${n.title || '(제목없음)'} / 날짜: ${dateStr} / 태그: ${(n.tags || []).join(', ') || '없음'}\n내용: ${n.content || '(없음)'}${n.aiSummary ? `\n사진/음성 분석: ${n.aiSummary}` : ''}${docNames ? `\n첨부 문서(내용은 읽을 수 없음, 파일명만 참고): ${docNames}` : ''}`;
+    const allDocs = getNoteMediaList(n).filter(m => m.type === 'document');
+    const otherDocs = allDocs.filter(m => !m.aiSummary).map(m => m.name).join(', ');
+    return `[기록 ${i + 1}] 제목: ${n.title || '(제목없음)'} / 날짜: ${dateStr} / 태그: ${(n.tags || []).join(', ') || '없음'}\n내용: ${n.content || '(없음)'}${n.aiSummary ? `\n사진/음성/PDF 분석: ${n.aiSummary}` : ''}${otherDocs ? `\n첨부 문서(내용 읽기 불가, 파일명만 참고): ${otherDocs}` : ''}`;
   }).join('\n\n');
 }
 
