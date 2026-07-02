@@ -50,8 +50,8 @@ export default {
         );
       }
 
-      // Gemini 모델 선택 (프론트에서 지정하거나, 기본값으로 1.5-flash 사용)
-      const model = reqJSON.model || "gemini-1.5-flash";
+      // Gemini 모델 선택 (프론트에서 지정하거나, 기본값으로 2.5-flash 사용)
+      const model = reqJSON.model || "gemini-2.5-flash";
       delete reqJSON.model; // Gemini API의 body에 맞추기 위해 불필요한 필드 제거
 
       // 4. 구글 서버(Gemini)로 실제 요청 전송 (API Key를 봇 몰래 여기서 붙여줌!)
