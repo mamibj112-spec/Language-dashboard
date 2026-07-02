@@ -1,5 +1,9 @@
 {
   "appId": "com.english.dashboard",
-  "appName": "영어공부대시보드",
-  "webDir": "www"
+  "appName": "공부대시보드",
+  "webDir": "www",
+  "server": {
+    "url": "https://mamibj112-spec.github.io/Language-dashboard/",
+    "cleartext": false
+  }
 }
