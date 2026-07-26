@@ -1,5 +1,10 @@
 // ── Roleplay: AI 롤플레잉 채팅, 번역, 피드백 ──
 
+function openTopicVideo() {
+  const q = currentTopic.ytQuery || (currentTopic.npc + ' English conversation');
+  window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(q), '_blank');
+}
+
 let chatStarted = false;
 let chatMsgs = [];
 let loading = false;

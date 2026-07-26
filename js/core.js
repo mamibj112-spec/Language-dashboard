@@ -124,6 +124,7 @@ const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','ppt','o
 const DASHBOARDS = {
   english: {
     label: '📚 영어공부 대시보드',
+    title: '영어 공부 대시보드',
     tabs: [
       { id: 'dialogue', label: '💬 대화' },
       { id: 'phrases', label: '📚 표현' },
@@ -136,6 +137,7 @@ const DASHBOARDS = {
   },
   company: {
     label: '💼 회사 대시보드',
+    title: '회사 대시보드',
     tabs: [
       { id: 'companyDash', label: '📊 대시보드' },
       { id: 'notes', label: '📒 기록' },
@@ -166,6 +168,7 @@ function switchDashboard(name, _isInitial) {
 
   const tabsEl = document.getElementById('dashboard-tabs');
   const dash = DASHBOARDS[name];
+  document.getElementById('header-title').textContent = dash.title;
   tabsEl.innerHTML = dash.tabs.map((t, i) => `<button class="tab-btn${i === 0 ? ' active' : ''}" onclick="switchTab('${t.id}')">${t.label}</button>`).join('');
 
   switchTab(dash.tabs[0].id, true);
@@ -219,6 +222,7 @@ window.addEventListener('popstate', (e) => {
         document.getElementById('dash-btn-english').classList.toggle('active', currentDashboard === 'english');
         document.getElementById('dash-btn-company').classList.toggle('active', currentDashboard === 'company');
         const dash = DASHBOARDS[currentDashboard];
+        document.getElementById('header-title').textContent = dash.title;
         document.getElementById('dashboard-tabs').innerHTML = dash.tabs.map(t => `<button class="tab-btn" onclick="switchTab('${t.id}')">${t.label}</button>`).join('');
       }
       if (state.tab) switchTab(state.tab, true);
