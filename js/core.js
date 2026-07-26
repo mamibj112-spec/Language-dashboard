@@ -123,7 +123,6 @@ const DASHBOARDS = {
     tabs: [
       { id: 'dialogue', label: '💬 대화' },
       { id: 'phrases', label: '📚 표현' },
-      { id: 'vocab', label: '📖 단어' },
       { id: 'role', label: '🎭 롤플레잉' },
       { id: 'quiz', label: '🧠 퀴즈' },
       { id: 'pattern', label: '📐 패턴' },
@@ -135,6 +134,13 @@ const DASHBOARDS = {
     title: '오픽',
     tabs: [
       { id: 'opic', label: '🎤 오픽 연습' },
+    ],
+  },
+  vocab: {
+    label: '📖 단어',
+    title: '단어',
+    tabs: [
+      { id: 'vocab', label: '📖 단어' },
     ],
   },
   company: {

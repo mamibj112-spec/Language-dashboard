@@ -31,9 +31,15 @@ function renderPhrases() {
 }
 
 // ── Vocab ──
+function getVocabDetailStore() {
+  try { return JSON.parse(localStorage.getItem('vocabDetailStore') || '{}'); } catch { return {}; }
+}
+function vocabDetailKey(word) { return currentTopic.npc + '::' + word; }
+
 function renderVocab() {
   const el = document.getElementById('vocab-list');
   el.innerHTML = '';
+  const detailStore = getVocabDetailStore();
   currentTopic.vocab.forEach((v, i) => {
     const div = document.createElement('div');
     div.className = 'vocab-item' + (openVocab === i ? ' open' : '');
@@ -49,6 +55,12 @@ function renderVocab() {
             <div class="vocab-ex-ko">${ex.ko}</div>
           </div>
         `).join('') + `</div>`;
+
+      const detail = detailStore[vocabDetailKey(v.word)];
+      exHtml += `<div style="margin-top:8px;">` + (detail ? renderVocabDetailHtml(detail) : `
+        <button class="complete-btn" id="vocab-detail-btn-${i}" onclick="event.stopPropagation();loadVocabDetail(${i})" style="background:linear-gradient(135deg,#a78bfa,#38bdf8);">✨ 파생어·구동사 더보기</button>
+        <div id="vocab-detail-result-${i}"></div>
+      `) + `</div>`;
     }
     div.innerHTML = `
       <div class="phrase-row">
@@ -64,6 +76,61 @@ function renderVocab() {
     div.onclick = () => { openVocab = openVocab === i ? null : i; renderVocab(); };
     el.appendChild(div);
   });
+}
+
+function renderVocabDetailHtml(detail) {
+  const forms = (detail.forms || []).map(f => `
+    <div style="display:inline-block;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.3);border-radius:20px;padding:4px 10px;margin:0 6px 6px 0;font-size:12px;">
+      <b style="color:#a78bfa;">${f.form}</b> <span style="color:#64748b;">(${f.pos})</span> — ${f.ko}
+    </div>`).join('');
+  const phrasal = (detail.phrasalVerbs || []).map(p => `
+    <div style="padding:10px 12px;border-radius:10px;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);margin-bottom:6px;">
+      <div style="font-weight:700;font-size:13px;color:#38bdf8;">${p.phrase} <button class="spk-btn" onclick="event.stopPropagation();speak('${(p.phrase||'').replace(/'/g,"\\'")}')">🔊</button></div>
+      <div style="font-size:12px;color:#94a3b8;margin-bottom:4px;">${p.ko}</div>
+      ${p.example ? `<div style="font-size:12px;color:#e2e8f0;">"${p.example}"</div><div style="font-size:11px;color:#64748b;">${p.exampleKo || ''}</div>` : ''}
+    </div>`).join('');
+  return `
+    ${forms ? `<div style="font-size:11px;color:#94a3b8;font-weight:600;margin-bottom:6px;">🔤 파생어</div><div style="margin-bottom:10px;">${forms}</div>` : ''}
+    ${phrasal ? `<div style="font-size:11px;color:#94a3b8;font-weight:600;margin-bottom:6px;">🔗 관련 구동사</div>${phrasal}` : ''}
+    ${!forms && !phrasal ? `<div style="font-size:12px;color:#64748b;">파생어·구동사를 찾지 못했어요.</div>` : ''}
+  `;
+}
+
+async function loadVocabDetail(i) {
+  const v = currentTopic.vocab[i];
+  const btn = document.getElementById(`vocab-detail-btn-${i}`);
+  const resultEl = document.getElementById(`vocab-detail-result-${i}`);
+  if (!geminiApiKey) { resultEl.innerHTML = `<div style="margin-top:8px;color:#fbbf24;font-size:12px;">⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요.</div>`; return; }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ 찾는 중...';
+
+  const prompt = `당신은 영어 어휘 전문가입니다. 아래 단어에 대해 학습자에게 도움이 되는 정보를 알려주세요.
+
+단어: "${v.word}" (뜻: ${v.ko})
+문맥: "${currentTopic.npc}"와 관련된 상황에서 쓰이는 단어예요.
+
+다음 JSON 형식으로만 답해주세요 (다른 설명 없이 JSON만):
+{
+  "forms": [{"form": "실제 존재하는 파생어", "pos": "품사(동사/명사/형용사/부사 등)", "ko": "뜻"}],
+  "phrasalVerbs": [{"phrase": "이 단어와 관련되거나 같은 상황에서 자주 쓰이는 구동사", "ko": "뜻", "example": "짧은 예문(영어)", "exampleKo": "예문 번역"}]
+}
+
+조건:
+- forms는 실제로 존재하는 파생어만 2~4개 (억지로 만들지 말고, 없으면 빈 배열)
+- phrasalVerbs는 2~3개, 일상 회화에서 실제로 자주 쓰는 것만`;
+
+  try {
+    const detail = await geminiJSON(prompt);
+    const store = getVocabDetailStore();
+    store[vocabDetailKey(v.word)] = detail;
+    localStorage.setItem('vocabDetailStore', JSON.stringify(store));
+    renderVocab();
+  } catch (err) {
+    resultEl.innerHTML = `<div style="margin-top:8px;color:#f87171;font-size:12px;">❌ ${err.message}</div>`;
+    btn.disabled = false;
+    btn.textContent = '✨ 파생어·구동사 더보기';
+  }
 }
 
 // ── Update Topic UI ──
