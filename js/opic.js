@@ -210,6 +210,23 @@ function applyOpicMemOverrides() {
   });
 }
 
+// 오픽 스크립트를 문장/레벨 태그 단위로 줄바꿈해서 읽기 편하게 만든다
+function formatScriptHtml(text) {
+  if (!text) return '';
+  let t = text.replace(/&lt;([^&]+)&gt;|<([^>]+)>/g, (m, a, b) => `@@TAG@@${a || b}@@TAG@@`);
+  t = t.replace(/([.!?])\s+/g, '$1@@BREAK@@');
+  return t.split('@@BREAK@@').map(seg => {
+    seg = seg.trim();
+    if (!seg) return '';
+    const m = seg.match(/@@TAG@@([^@]+)@@TAG@@/);
+    if (m) {
+      const rest = seg.replace(/@@TAG@@[^@]+@@TAG@@/g, '').trim();
+      return `<div class="script-level-tag">${m[1]}</div>` + (rest ? `<p>${rest}</p>` : '');
+    }
+    return `<p>${seg}</p>`;
+  }).join('');
+}
+
 function renderOpicMemorize() {
   const contentEl = document.getElementById('opic-stage-content');
   document.getElementById('opic-result').innerHTML = '';
@@ -260,7 +277,6 @@ function renderOpicMemorize() {
   }
 
   const item = topic.items[opicMemItemIdx];
-  const cleanTag = (s) => (s || '').replace(/&lt;|</g, '[').replace(/&gt;|>/g, ']');
 
   contentEl.innerHTML = `
     <button class="tab-btn" onclick="opicMemItemIdx=null;renderOpicMemorize()" style="margin-bottom:10px;">← ${topic.topic} 목록</button>
@@ -272,12 +288,12 @@ function renderOpicMemorize() {
       ${item.en_script ? `
         <div style="padding:12px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);margin-bottom:10px;">
           <div style="font-size:12px;color:#0ea5e9;font-weight:600;margin-bottom:8px;">🇰🇷 한국어 스크립트 (이걸 보고 영어로 떠올려보세요)</div>
-          <div style="font-size:14px;line-height:1.7;">${cleanTag(item.ko_script)}</div>
+          <div style="font-size:14px;line-height:1.7;" class="script-text">${formatScriptHtml(item.ko_script)}</div>
         </div>
         ${opicMemRevealed ? `
           <div style="padding:12px;border-radius:12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);">
             <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:8px;">🇺🇸 정답 스크립트 <button class="spk-btn" onclick="speak('${item.en_script.replace(/&lt;[^&]*&gt;|<[^>]*>/g,'').replace(/'/g,"\\'")}')">🔊</button></div>
-            <div style="font-size:14px;line-height:1.8;">${cleanTag(item.en_script)}</div>
+            <div style="font-size:14px;line-height:1.8;" class="script-text">${formatScriptHtml(item.en_script)}</div>
           </div>
           <button class="complete-btn" onclick="opicMemRevealed=false;renderOpicMemorize()" style="margin-top:10px;background:rgba(255,255,255,0.08);">🙈 다시 가리기</button>
           <button class="complete-btn ${item.done ? 'done' : ''}" onclick="toggleOpicMemDone()" style="margin-top:10px;${item.done ? '' : 'background:linear-gradient(135deg,#22c55e,#0ea5e9);'}">${item.done ? '✅ 외웠어요 (취소하려면 클릭)' : '☑️ 외웠어요 체크'}</button>
@@ -445,9 +461,9 @@ async function loadOpicQuestions(stage, label, emoji) {
         <div style="font-weight:700;font-size:15px;margin-bottom:4px;">${it.question_en} <button class="spk-btn" onclick="speak('${(it.question_en || '').replace(/'/g, "\\'")}')">🔊</button></div>
         <div style="color:#94a3b8;font-size:13px;margin-bottom:12px;">${it.question_ko}</div>
         <div style="padding:12px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">
-          <div style="font-size:12px;color:#0ea5e9;font-weight:600;margin-bottom:6px;">📝 모범답안</div>
-          <div style="font-size:14px;line-height:1.7;margin-bottom:8px;">${it.answer_en} <button class="spk-btn" onclick="speak('${(it.answer_en || '').replace(/'/g, "\\'")}')">🔊</button></div>
-          <div style="color:#94a3b8;font-size:13px;line-height:1.6;">${it.answer_ko}</div>
+          <div style="font-size:12px;color:#0ea5e9;font-weight:600;margin-bottom:6px;">📝 모범답안 <button class="spk-btn" onclick="speak('${(it.answer_en || '').replace(/'/g, "\\'")}')">🔊</button></div>
+          <div style="font-size:14px;line-height:1.7;margin-bottom:8px;" class="script-text">${formatScriptHtml(it.answer_en)}</div>
+          <div style="color:#94a3b8;font-size:13px;line-height:1.6;" class="script-text">${formatScriptHtml(it.answer_ko)}</div>
         </div>
       </div>`).join('');
   } catch (err) {
