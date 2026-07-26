@@ -4,6 +4,144 @@ let chatStarted = false;
 let chatMsgs = [];
 let loading = false;
 
+// ── 음성 입력(마이크) ──
+let recognition = null;
+let micActive = false;
+
+function getRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  if (recognition) return recognition;
+  recognition = new SR();
+  recognition.lang = 'en-US';
+  recognition.interimResults = true;
+  recognition.continuous = false;
+  recognition.onresult = (e) => {
+    let text = '';
+    for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+    const input = document.getElementById('chat-input');
+    if (input) input.value = text;
+  };
+  recognition.onend = () => {
+    micActive = false;
+    updateMicBtn();
+    const input = document.getElementById('chat-input');
+    if (input && input.value.trim()) sendMsg();
+  };
+  recognition.onerror = (e) => {
+    micActive = false;
+    updateMicBtn();
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      alert('마이크 권한이 필요해요. 브라우저 설정에서 마이크 접근을 허용해주세요.');
+    }
+  };
+  return recognition;
+}
+
+function isNativeApp() {
+  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+}
+
+function toggleMic() {
+  if (isNativeApp()) { toggleMicNative(); return; }
+
+  const r = getRecognition();
+  if (!r) {
+    alert('이 브라우저/앱에서는 음성 인식을 지원하지 않아요. PC나 모바일 Chrome 브라우저에서 이용해주세요.');
+    return;
+  }
+  if (micActive) {
+    r.stop();
+    micActive = false;
+  } else {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    if (_audio) { _audio.pause(); _audio = null; }
+    const input = document.getElementById('chat-input');
+    if (input) input.value = '';
+    try { r.start(); micActive = true; } catch { micActive = false; }
+  }
+  updateMicBtn();
+}
+
+// ── 네이티브 앱(APK) 전용: Capacitor 음성인식 플러그인 사용 ──
+async function toggleMicNative() {
+  const SpeechRecognition = window.Capacitor.Plugins.SpeechRecognition;
+  const input = document.getElementById('chat-input');
+
+  if (micActive) {
+    try { await SpeechRecognition.stop(); } catch {}
+    micActive = false;
+    updateMicBtn();
+    return;
+  }
+
+  try {
+    let perm = await SpeechRecognition.checkPermissions();
+    if (perm.speechRecognition !== 'granted') {
+      perm = await SpeechRecognition.requestPermissions();
+    }
+    if (perm.speechRecognition !== 'granted') {
+      alert('마이크 권한이 필요해요. 폰 설정 > 앱 > 공부대시보드 > 권한에서 마이크를 허용해주세요.');
+      return;
+    }
+  } catch (e) {
+    alert('음성 인식을 사용할 수 없어요: ' + e.message);
+    return;
+  }
+
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  if (_audio) { _audio.pause(); _audio = null; }
+  if (input) input.value = '';
+  micActive = true;
+  updateMicBtn();
+
+  SpeechRecognition.removeAllListeners();
+  SpeechRecognition.addListener('partialResults', (data) => {
+    if (input && data.matches && data.matches.length) input.value = data.matches[0];
+  });
+
+  try {
+    const result = await SpeechRecognition.start({ language: 'en-US', partialResults: true, popup: false });
+    if (input && result && result.matches && result.matches.length) input.value = result.matches[0];
+  } catch (e) {
+    // 사용자가 중간에 멈췄거나 인식 실패 - partialResults로 잡힌 텍스트를 그대로 사용
+  }
+
+  micActive = false;
+  updateMicBtn();
+  if (input && input.value.trim()) sendMsg();
+}
+
+function updateMicBtn() {
+  const btn = document.getElementById('mic-btn');
+  if (!btn) return;
+  btn.textContent = micActive ? '🔴' : '🎤';
+  btn.classList.toggle('recording', micActive);
+}
+
+// ── AI 답변 자동 읽기 ──
+let autoSpeak = localStorage.getItem('autoSpeak') !== '0';
+
+function toggleAutoSpeak() {
+  autoSpeak = !autoSpeak;
+  localStorage.setItem('autoSpeak', autoSpeak ? '1' : '0');
+  updateAutoSpeakBtn();
+}
+
+function updateAutoSpeakBtn() {
+  const btn = document.getElementById('autospeak-btn');
+  if (!btn) return;
+  btn.textContent = autoSpeak ? '🔊 자동 읽기 ON' : '🔇 자동 읽기 OFF';
+  btn.classList.toggle('active', autoSpeak);
+}
+
+function autoSpeakLast() {
+  if (!autoSpeak) return;
+  const last = chatMsgs[chatMsgs.length - 1];
+  if (!last || last.role !== 'assistant' || last.isFeedback) return;
+  speak(parseReply(last.content).main);
+}
+
 async function startRole() {
   chatStarted = true;
   chatMsgs = [];
@@ -30,6 +168,7 @@ async function startRole() {
     practicePattern = null;
   }
   renderChat();
+  autoSpeakLast();
 }
 
 function parseReply(content) {
@@ -141,6 +280,7 @@ async function sendMsg() {
   }
   loading = false;
   renderChat();
+  autoSpeakLast();
 }
 
 // ── Feedback ──

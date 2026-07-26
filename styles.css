@@ -246,6 +246,25 @@ body {
   border: none; border-radius: 10px; padding: 11px 16px;
   cursor: pointer; font-size: 16px;
 }
+.mic-btn {
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px; padding: 11px 14px; cursor: pointer; font-size: 16px;
+  transition: all .2s; flex: none;
+}
+.mic-btn.recording {
+  background: rgba(239,68,68,0.25); border-color: rgba(239,68,68,0.5);
+  animation: micPulse 1s infinite;
+}
+@keyframes micPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+}
+.autospeak-btn {
+  font-size: 11px; font-weight: 700; padding: 5px 10px; border-radius: 999px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  color: #94a3b8; cursor: pointer; transition: all .2s; font-family: inherit;
+}
+.autospeak-btn.active { background: rgba(56,189,248,0.15); border-color: rgba(56,189,248,0.4); color: #38bdf8; }
 .typing { display: flex; gap: 4px; padding: 6px 4px; }
 .typing-dot {
   width: 7px; height: 7px; border-radius: 50%; background: #a78bfa;

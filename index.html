@@ -100,6 +100,9 @@
       ⚠️ AI 롤플레잉을 사용하려면 Cloudflare Worker URL이 필요해요
       <input type="url" id="worker-url-input" placeholder="https://...workers.dev 입력 후 Enter" onkeydown="if(event.key==='Enter')saveWorkerUrl()">
     </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:6px;">
+      <button class="autospeak-btn active" id="autospeak-btn" onclick="toggleAutoSpeak()">🔊 자동 읽기 ON</button>
+    </div>
     <div class="chat-box" id="chat-box">
       <div class="chat-start-center" id="chat-start">
         <div class="chat-start-icon" id="chat-start-icon">☕</div>
@@ -109,7 +112,8 @@
       <div id="chat-msgs" class="hidden"></div>
     </div>
     <div class="chat-input-row hidden" id="chat-input-row">
-      <input class="chat-input" id="chat-input" placeholder="영어로 대답해보세요..." onkeydown="if(event.key==='Enter')sendMsg()">
+      <button class="mic-btn" id="mic-btn" onclick="toggleMic()" title="마이크로 말하기">🎤</button>
+      <input class="chat-input" id="chat-input" placeholder="영어로 대답해보세요... (🎤 눌러서 말하기)" onkeydown="if(event.key==='Enter')sendMsg()">
       <button class="chat-send-btn" onclick="sendMsg()">➤</button>
     </div>
     <button class="feedback-btn hidden" id="feedback-btn" onclick="requestFeedback()">📊 대화 피드백 받기</button>

@@ -40,6 +40,8 @@ function init() {
   // Worker URL banner 항상 숨김 (URL 하드코딩됨)
   document.getElementById('api-banner').classList.add('hidden');
 
+  updateAutoSpeakBtn();
+
   updateTopicUI();
   renderPhrases();
   renderVocab();
