@@ -113,10 +113,23 @@ function _playNextChunk() {
 }
 
 function speak(text) {
+  if (isNativeApp()) { speakNative(text); return; }
   if (_audio) { _audio.pause(); _audio = null; }
   if (window.speechSynthesis) window.speechSynthesis.cancel();
   _speakQueue = splitForTTS(text, 190);
   _playNextChunk();
+}
+
+// 네이티브 앱(APK)에서는 안드로이드 WebView가 오디오/음성합성을 제대로 지원하지 않는 경우가 많아
+// Capacitor 네이티브 TTS 플러그인을 대신 사용한다.
+async function speakNative(text) {
+  try {
+    const TextToSpeech = window.Capacitor.Plugins.TextToSpeech;
+    await TextToSpeech.stop();
+    await TextToSpeech.speak({ text, lang: 'en-US', rate: 0.9, pitch: 1.0, volume: 1.0, category: 'playback' });
+  } catch (e) {
+    console.warn('Native TTS failed:', e.message);
+  }
 }
 
 // ── Tab switch ──
