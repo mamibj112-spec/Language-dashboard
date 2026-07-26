@@ -1,12 +1,8 @@
 // ── Core: 공통 상태, 초기화, TTS, 탭/대시보드 전환, 설정 ──
 
 // ── State ──
-const DAYS_KO = ["일","월","화","수","목","금","토"];
 const today = new Date();
-const todayDay = today.getDay();
 
-let streak = parseInt(localStorage.getItem('streak') || '1');
-let checkedDays = JSON.parse(localStorage.getItem('checkedDays') || '[]');
 let done = localStorage.getItem('done_' + today.toDateString()) === '1';
 let workerUrl = 'https://language-dashboard-worker.mamibj7.workers.dev';
 let currentTopic = TOPICS[Math.floor(Math.random() * TOPICS.length)];
@@ -16,20 +12,6 @@ function init() {
   // Date
   document.getElementById('today-date').textContent =
     today.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
-
-  // Streak display
-  document.getElementById('streak-num').textContent = streak;
-
-  // Week dots
-  const weekEl = document.getElementById('week-dots');
-  DAYS_KO.forEach((d, i) => {
-    const dot = document.createElement('div');
-    dot.className = 'day-dot' +
-      (checkedDays.includes(i) ? ' done' : '') +
-      (i === todayDay && !checkedDays.includes(i) ? ' today' : '');
-    dot.textContent = checkedDays.includes(i) ? '✓' : d;
-    weekEl.appendChild(dot);
-  });
 
   if (done) {
     const btn = document.getElementById('complete-btn');
@@ -136,8 +118,8 @@ async function speakNative(text) {
 const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','ppt','opic','notes','companyDash','companyAsk'];
 const DASHBOARDS = {
   english: {
-    label: '📚 영어공부 대시보드',
-    title: '영어 공부 대시보드',
+    label: '💬 영어회화',
+    title: '영어 회화',
     tabs: [
       { id: 'dialogue', label: '💬 대화' },
       { id: 'phrases', label: '📚 표현' },
@@ -145,11 +127,17 @@ const DASHBOARDS = {
       { id: 'role', label: '🎭 롤플레잉' },
       { id: 'quiz', label: '🧠 퀴즈' },
       { id: 'pattern', label: '📐 패턴' },
-      { id: 'opic', label: '🎤 오픽' },
+    ],
+  },
+  opic: {
+    label: '🎤 오픽',
+    title: '오픽',
+    tabs: [
+      { id: 'opic', label: '🎤 오픽 연습' },
     ],
   },
   company: {
-    label: '💼 회사 대시보드',
+    label: '💼 회사',
     title: '회사 대시보드',
     tabs: [
       { id: 'companyDash', label: '📊 대시보드' },
@@ -176,8 +164,9 @@ function pushHistoryState(replace) {
 function switchDashboard(name, _isInitial) {
   currentDashboard = name;
   localStorage.setItem('currentDashboard', name);
-  document.getElementById('dash-btn-english').classList.toggle('active', name === 'english');
-  document.getElementById('dash-btn-company').classList.toggle('active', name === 'company');
+  Object.keys(DASHBOARDS).forEach(key => {
+    document.getElementById('dash-btn-' + key).classList.toggle('active', key === name);
+  });
 
   const tabsEl = document.getElementById('dashboard-tabs');
   const dash = DASHBOARDS[name];
@@ -232,8 +221,9 @@ window.addEventListener('popstate', (e) => {
       if (state.dashboard && state.dashboard !== currentDashboard) {
         currentDashboard = state.dashboard;
         localStorage.setItem('currentDashboard', currentDashboard);
-        document.getElementById('dash-btn-english').classList.toggle('active', currentDashboard === 'english');
-        document.getElementById('dash-btn-company').classList.toggle('active', currentDashboard === 'company');
+        Object.keys(DASHBOARDS).forEach(key => {
+          document.getElementById('dash-btn-' + key).classList.toggle('active', key === currentDashboard);
+        });
         const dash = DASHBOARDS[currentDashboard];
         document.getElementById('header-title').textContent = dash.title;
         document.getElementById('dashboard-tabs').innerHTML = dash.tabs.map(t => `<button class="tab-btn" onclick="switchTab('${t.id}')">${t.label}</button>`).join('');

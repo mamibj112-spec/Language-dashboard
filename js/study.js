@@ -114,23 +114,10 @@ function loadNewTopic() {
 function markComplete() {
   if (done) return;
   done = true;
-  streak++;
-  if (!checkedDays.includes(todayDay)) checkedDays.push(todayDay);
-  localStorage.setItem('streak', streak);
-  localStorage.setItem('checkedDays', JSON.stringify(checkedDays));
   localStorage.setItem('done_' + today.toDateString(), '1');
-  document.getElementById('streak-num').textContent = streak;
   const btn = document.getElementById('complete-btn');
   btn.textContent = '✅ 오늘 공부 완료!';
   btn.classList.add('done');
-  // Refresh dots
-  document.getElementById('week-dots').innerHTML = '';
-  DAYS_KO.forEach((d, i) => {
-    const dot = document.createElement('div');
-    dot.className = 'day-dot' + (checkedDays.includes(i) ? ' done' : '') + (i === todayDay && !checkedDays.includes(i) ? ' today' : '');
-    dot.textContent = checkedDays.includes(i) ? '✓' : d;
-    document.getElementById('week-dots').appendChild(dot);
-  });
 }
 
 // ── Hints ──
