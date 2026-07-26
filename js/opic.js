@@ -6,7 +6,82 @@ const OPIC_STAGES = [
   { id: 'role', emoji: '🎭', label: '3. 롤플레이' },
   { id: 'twist', emoji: '⚡', label: '4. 돌발질문' },
   { id: 'memorize', emoji: '📝', label: '5. 스크립트 암기' },
+  { id: 'allpurpose', emoji: '🧰', label: '만능 답변' },
 ];
+
+// ── 어떤 문제가 나와도 쓸 수 있는 만능 표현 모음 ──
+const OPIC_ALLPURPOSE = [
+  {
+    category: '⏳ 시간 끌기 (생각할 시간 벌기)',
+    items: [
+      { en: "That's a really interesting question.", ko: "정말 흥미로운 질문이네요." },
+      { en: "Let me think about that for a moment.", ko: "잠시 생각해 볼게요." },
+      { en: "Well, there are a few things I'd like to mention.", ko: "음, 몇 가지 말씀드리고 싶은 게 있어요." },
+      { en: "That's a great question, let me tell you about it.", ko: "좋은 질문이네요, 말씀드릴게요." },
+    ],
+  },
+  {
+    category: '💭 의견 제시',
+    items: [
+      { en: "In my opinion, ~", ko: "제 생각에는 ~" },
+      { en: "Personally, I think ~", ko: "개인적으로 저는 ~라고 생각해요" },
+      { en: "I believe that ~", ko: "저는 ~라고 믿어요" },
+      { en: "From my point of view, ~", ko: "제 관점에서는 ~" },
+    ],
+  },
+  {
+    category: '📌 이유·근거 설명',
+    items: [
+      { en: "That's because ~", ko: "그건 ~때문이에요" },
+      { en: "The main reason is that ~", ko: "가장 큰 이유는 ~라는 거예요" },
+      { en: "This is mainly due to ~", ko: "이건 주로 ~때문이에요" },
+    ],
+  },
+  {
+    category: '📝 예시 들기',
+    items: [
+      { en: "For example, ~", ko: "예를 들면, ~" },
+      { en: "To give you an example, ~", ko: "예를 하나 들어드리면, ~" },
+      { en: "Let's say ~", ko: "가령 ~라고 해봐요" },
+    ],
+  },
+  {
+    category: '➕ 내용 추가·전환',
+    items: [
+      { en: "Also, ~", ko: "그리고, ~" },
+      { en: "On top of that, ~", ko: "게다가, ~" },
+      { en: "Besides that, ~", ko: "그 외에도, ~" },
+      { en: "Speaking of which, ~", ko: "그러고 보니, ~" },
+    ],
+  },
+  {
+    category: '⚖️ 비교·대조',
+    items: [
+      { en: "Compared to before, ~", ko: "예전과 비교하면, ~" },
+      { en: "Unlike ~, ~", ko: "~와 다르게, ~" },
+      { en: "On the other hand, ~", ko: "반면에, ~" },
+    ],
+  },
+  {
+    category: '🏁 마무리',
+    items: [
+      { en: "That's about it.", ko: "이 정도인 것 같아요." },
+      { en: "That's all I can think of for now.", ko: "지금 생각나는 건 이 정도예요." },
+      { en: "Anyway, that's pretty much it.", ko: "아무튼, 대략 이 정도예요." },
+      { en: "I hope that answers your question.", ko: "질문에 대한 답이 되었길 바라요." },
+    ],
+  },
+  {
+    category: '🆘 모르거나 막힐 때 (매우 중요!)',
+    items: [
+      { en: "Hmm, that's a tough question, but let me try.", ko: "음, 어려운 질문이지만 한번 대답해볼게요." },
+      { en: "I haven't really thought about that before, but I'll give it a shot.", ko: "그건 딱히 생각해본 적 없지만, 한번 말해볼게요." },
+      { en: "I'm not totally sure, but if I had to guess, I'd say ~", ko: "완전히 확신은 없지만, 굳이 말하자면 ~일 것 같아요" },
+      { en: "Sorry, could you repeat the question, please?", ko: "죄송한데, 질문을 한 번 더 말씀해 주시겠어요?" },
+    ],
+  },
+];
+let opicAPOpen = {};
 const OPIC_SURVEY_TOPICS = [
   { emoji: '🏠', label: '거주지' },
   { emoji: '💼', label: '직장/업무' },
@@ -52,7 +127,36 @@ function renderOpicTopics() {
       <button class="complete-btn" onclick="loadOpicQuestions('twist','돌발질문','⚡')">▶ 돌발질문 받기</button>`;
   } else if (opicStage === 'memorize') {
     renderOpicMemorize();
+  } else if (opicStage === 'allpurpose') {
+    renderOpicAllPurpose();
   }
+}
+
+// ── 만능 답변 ──
+function renderOpicAllPurpose() {
+  const contentEl = document.getElementById('opic-stage-content');
+  contentEl.innerHTML = `<div style="font-size:13px;color:#94a3b8;margin-bottom:10px;">어떤 문제가 나와도 이 표현들로 답변을 이어갈 수 있어요. 통째로 외워두면 실전에서 든든해요.</div>` +
+    OPIC_ALLPURPOSE.map((cat, ci) => `
+      <div class="card" style="margin-bottom:10px;">
+        <div style="font-weight:700;font-size:14px;margin-bottom:10px;">${cat.category}</div>
+        ${cat.items.map((it, ii) => {
+          const key = ci + '-' + ii;
+          const open = !!opicAPOpen[key];
+          return `
+            <div class="phrase-item${open ? ' open' : ''}" onclick="toggleOpicAP('${key}')">
+              <div class="phrase-row">
+                <div class="phrase-en">${it.en}</div>
+                <button class="spk-btn" onclick="event.stopPropagation();speak('${it.en.replace(/'/g, "\\'")}')">🔊</button>
+              </div>
+              ${open ? `<div class="phrase-ko">${it.ko}</div>` : `<div class="phrase-hint">👆 탭해서 한국어 보기</div>`}
+            </div>`;
+        }).join('')}
+      </div>`).join('');
+}
+
+function toggleOpicAP(key) {
+  opicAPOpen[key] = !opicAPOpen[key];
+  renderOpicAllPurpose();
 }
 
 // ── 오픽 스크립트 암기 (내 스크립트 자료 기반) ──
