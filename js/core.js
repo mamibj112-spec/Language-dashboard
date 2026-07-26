@@ -115,7 +115,7 @@ async function speakNative(text) {
 }
 
 // ── Tab switch ──
-const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','ppt','opic','notes','companyDash','companyAsk'];
+const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','review','ppt','opic','notes','companyDash','companyAsk'];
 const DASHBOARDS = {
   english: {
     label: '💬 영어회화',
@@ -127,6 +127,7 @@ const DASHBOARDS = {
       { id: 'role', label: '🎭 롤플레잉' },
       { id: 'quiz', label: '🧠 퀴즈' },
       { id: 'pattern', label: '📐 패턴' },
+      { id: 'review', label: '📝 복습' },
     ],
   },
   opic: {
@@ -205,6 +206,9 @@ function switchTab(name, skipHistory) {
   if (name === 'companyAsk' && !askChatInitialized) {
     askChatInitialized = true;
     renderAskChat();
+  }
+  if (name === 'review') {
+    renderReviewList();
   }
   if (!skipHistory) pushHistoryState();
 }

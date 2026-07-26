@@ -98,6 +98,22 @@ const OPIC_SURVEY_TOPICS = [
 ];
 let opicStage = 'intro';
 
+// ── 목표 등급 (AI 생성 문제/모범답안의 난이도에 반영) ──
+const OPIC_LEVELS = ['IL', 'IM1', 'IM2', 'IH', 'AL'];
+let opicTargetLevel = localStorage.getItem('opicTargetLevel') || 'IM2';
+
+function setOpicLevel(lv) {
+  opicTargetLevel = lv;
+  localStorage.setItem('opicTargetLevel', lv);
+  renderOpicLevelTabs();
+}
+
+function renderOpicLevelTabs() {
+  const el = document.getElementById('opic-level-tabs');
+  if (!el) return;
+  el.innerHTML = OPIC_LEVELS.map(lv => `<button class="tab-btn${lv === opicTargetLevel ? ' active' : ''}" onclick="setOpicLevel('${lv}')" style="flex:none;padding:6px 14px;">${lv}</button>`).join('');
+}
+
 function setOpicStage(id) {
   opicStage = id;
   document.getElementById('opic-result').innerHTML = '';
@@ -105,6 +121,7 @@ function setOpicStage(id) {
 }
 
 function renderOpicTopics() {
+  renderOpicLevelTabs();
   const tabsEl = document.getElementById('opic-stage-tabs');
   tabsEl.innerHTML = OPIC_STAGES.map(s => `
     <button class="tab-btn${s.id === opicStage ? ' active' : ''}" onclick="setOpicStage('${s.id}')" style="flex:none;">${s.emoji} ${s.label}</button>
@@ -227,6 +244,131 @@ function formatScriptHtml(text) {
   }).join('');
 }
 
+// ── 오픽 말하기 연습: 마이크로 직접 말해보고 모범답안과 비교 ──
+let opicSpeakingKey = null;
+let opicSpeakingTranscript = '';
+let opicSpeakingActive = false;
+let opicRecognition = null;
+
+function getOpicRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  if (opicRecognition) return opicRecognition;
+  opicRecognition = new SR();
+  opicRecognition.lang = 'en-US';
+  opicRecognition.interimResults = true;
+  opicRecognition.continuous = false;
+  opicRecognition.onresult = (e) => {
+    let text = '';
+    for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+    opicSpeakingTranscript = text;
+    const el = document.getElementById('opic-speaking-transcript');
+    if (el) el.textContent = opicSpeakingTranscript;
+  };
+  opicRecognition.onend = () => { opicSpeakingActive = false; renderOpicMemorize(); };
+  opicRecognition.onerror = (e) => {
+    opicSpeakingActive = false;
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      alert('마이크 권한이 필요해요. 브라우저 설정에서 마이크 접근을 허용해주세요.');
+    }
+    renderOpicMemorize();
+  };
+  return opicRecognition;
+}
+
+function toggleOpicSpeaking() {
+  if (isNativeApp()) { toggleOpicSpeakingNative(); return; }
+  const r = getOpicRecognition();
+  if (!r) {
+    alert('이 브라우저/앱에서는 음성 인식을 지원하지 않아요. PC나 모바일 Chrome 브라우저에서 이용해주세요.');
+    return;
+  }
+  if (opicSpeakingActive) {
+    r.stop();
+    opicSpeakingActive = false;
+  } else {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    opicSpeakingTranscript = '';
+    try { r.start(); opicSpeakingActive = true; } catch { opicSpeakingActive = false; }
+  }
+  renderOpicMemorize();
+}
+
+async function toggleOpicSpeakingNative() {
+  const SpeechRecognition = window.Capacitor.Plugins.SpeechRecognition;
+  if (opicSpeakingActive) {
+    try { await SpeechRecognition.stop(); } catch {}
+    opicSpeakingActive = false;
+    renderOpicMemorize();
+    return;
+  }
+  try {
+    let perm = await SpeechRecognition.checkPermissions();
+    if (perm.speechRecognition !== 'granted') perm = await SpeechRecognition.requestPermissions();
+    if (perm.speechRecognition !== 'granted') {
+      alert('마이크 권한이 필요해요. 폰 설정 > 앱 > 공부대시보드 > 권한에서 마이크를 허용해주세요.');
+      return;
+    }
+  } catch (e) {
+    alert('음성 인식을 사용할 수 없어요: ' + e.message);
+    return;
+  }
+
+  opicSpeakingTranscript = '';
+  opicSpeakingActive = true;
+  renderOpicMemorize();
+
+  SpeechRecognition.removeAllListeners();
+  SpeechRecognition.addListener('partialResults', (data) => {
+    if (data.matches && data.matches.length) {
+      opicSpeakingTranscript = data.matches[0];
+      const el = document.getElementById('opic-speaking-transcript');
+      if (el) el.textContent = opicSpeakingTranscript;
+    }
+  });
+
+  try {
+    const result = await SpeechRecognition.start({ language: 'en-US', partialResults: true, popup: false });
+    if (result && result.matches && result.matches.length) opicSpeakingTranscript = result.matches[0];
+  } catch (e) {
+    // 중간에 멈췄거나 인식 실패 - partialResults로 잡힌 텍스트를 그대로 사용
+  }
+
+  opicSpeakingActive = false;
+  renderOpicMemorize();
+}
+
+async function compareOpicSpeaking(modelScript) {
+  const resultEl = document.getElementById('opic-compare-result');
+  const btn = document.getElementById('opic-compare-btn');
+  if (!geminiApiKey) { resultEl.innerHTML = `<div style="margin-top:10px;color:#fbbf24;">⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요.</div>`; return; }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ 분석 중...';
+
+  const prompt = `당신은 OPIc 스피킹 코치입니다. 학습자가 아래 모범답안을 참고용으로 두고 직접 말한 내용을 비교해서 한국어로 피드백을 주세요.
+
+[모범답안]
+${modelScript}
+
+[학습자가 실제로 말한 내용 (음성인식 텍스트라 오타/누락이 있을 수 있음을 감안)]
+${opicSpeakingTranscript}
+
+아래 형식으로 짧고 친절하게 작성하세요:
+✅ 잘한 점
+⚠️ 놓친 내용이나 문법 실수
+💬 다음엔 이렇게 말해보세요 (구체적인 문장 제안 1~2개)`;
+
+  try {
+    const feedback = await geminiText(prompt, 'You are an encouraging OPIc speaking coach. Reply in Korean only.');
+    resultEl.innerHTML = `<div class="feedback-card" style="margin-top:10px;">${feedback}</div>`;
+  } catch (err) {
+    resultEl.innerHTML = `<div style="margin-top:10px;color:#f87171;">❌ ${err.message}</div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = '✨ AI로 비교 분석';
+}
+
 function renderOpicMemorize() {
   const contentEl = document.getElementById('opic-stage-content');
   document.getElementById('opic-result').innerHTML = '';
@@ -278,6 +420,13 @@ function renderOpicMemorize() {
 
   const item = topic.items[opicMemItemIdx];
 
+  const speakingKey = opicMemCategory + '-' + opicMemTopicIdx + '-' + opicMemItemIdx;
+  if (speakingKey !== opicSpeakingKey) {
+    opicSpeakingKey = speakingKey;
+    opicSpeakingTranscript = '';
+    opicSpeakingActive = false;
+  }
+
   contentEl.innerHTML = `
     <button class="tab-btn" onclick="opicMemItemIdx=null;renderOpicMemorize()" style="margin-bottom:10px;">← ${topic.topic} 목록</button>
     <div class="card">
@@ -298,6 +447,15 @@ function renderOpicMemorize() {
           <button class="complete-btn" onclick="opicMemRevealed=false;renderOpicMemorize()" style="margin-top:10px;background:rgba(255,255,255,0.08);">🙈 다시 가리기</button>
           <button class="complete-btn ${item.done ? 'done' : ''}" onclick="toggleOpicMemDone()" style="margin-top:10px;${item.done ? '' : 'background:linear-gradient(135deg,#22c55e,#0ea5e9);'}">${item.done ? '✅ 외웠어요 (취소하려면 클릭)' : '☑️ 외웠어요 체크'}</button>
           <div id="opic-study-points" style="margin-top:10px;">${renderOpicStudyPoints(item)}</div>
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
+            <div style="font-size:12px;color:#94a3b8;font-weight:600;margin-bottom:8px;">🎤 내 답변 말해보기 (모범답안 보지 말고 말해보세요)</div>
+            <button class="mic-btn${opicSpeakingActive ? ' recording' : ''}" id="opic-mic-btn" onclick="toggleOpicSpeaking()" style="width:100%;">${opicSpeakingActive ? '🔴 녹음 중지' : '🎤 눌러서 말하기'}</button>
+            <div id="opic-speaking-transcript" style="margin-top:8px;font-size:13px;color:#e2e8f0;min-height:20px;">${opicSpeakingTranscript}</div>
+            ${opicSpeakingTranscript && !opicSpeakingActive ? `
+              <button class="complete-btn" id="opic-compare-btn" onclick='compareOpicSpeaking(${JSON.stringify(item.en_script.replace(/&lt;[^&]*&gt;|<[^>]*>/g,''))})' style="margin-top:8px;background:linear-gradient(135deg,#a78bfa,#38bdf8);">✨ AI로 비교 분석</button>
+              <div id="opic-compare-result"></div>
+            ` : ''}
+          </div>
         ` : `
           <button class="complete-btn" onclick="opicMemRevealed=true;renderOpicMemorize()">👀 영어 스크립트 보기</button>
         `}
@@ -367,7 +525,7 @@ async function loadOpicStudyPoints(topicIdx, itemIdx) {
 
 조건:
 - expressions는 2~4개, grammar는 1~3개, allPurpose는 2~3개
-- 모두 한국어로 쉽게 설명, IL~IM2 학습자 눈높이`;
+- 모두 한국어로 쉽게 설명, ${opicTargetLevel} 학습자 눈높이`;
 
   try {
     item.studyPoints = await geminiJSON(prompt);
@@ -391,7 +549,7 @@ async function generateOpicScript(topicIdx, itemIdx) {
   btn.textContent = '⏳ 생성 중...';
   resultEl.innerHTML = '';
 
-  const prompt = `당신은 OPIc(오픽) 영어 말하기 시험 스크립트 작성 전문가입니다. 아래 질문에 대한 IL~IM2 수준의 모범답안 스크립트를 작성해주세요.
+  const prompt = `당신은 OPIc(오픽) 영어 말하기 시험 스크립트 작성 전문가입니다. 아래 질문에 대한 ${opicTargetLevel} 수준의 모범답안 스크립트를 작성해주세요.
 
 질문(영어): ${item.q_en}
 질문(한국어): ${item.q_ko}
@@ -401,7 +559,7 @@ async function generateOpicScript(topicIdx, itemIdx) {
 {"en_script": "영어 모범답안 (4~6문장, 쉽고 자연스러운 구어체)", "ko_script": "모범답안 한국어 번역"}
 
 조건:
-- IL~IM2 수준에 맞게 너무 어렵지 않은 문법과 어휘 사용
+- ${opicTargetLevel} 수준에 맞게 너무 어렵지 않은 문법과 어휘 사용
 - 같은 주제의 다른 문항들과 비슷한 톤(친근한 구어체)으로 작성`;
 
   try {
@@ -419,21 +577,21 @@ async function generateOpicScript(topicIdx, itemIdx) {
 }
 
 const OPIC_STAGE_PROMPTS = {
-  intro: (label) => `당신은 OPIc(오픽) 영어 말하기 시험 출제 전문가입니다. 시험 맨 처음에 나오는 "자기소개(Self Introduction)" 질문 1개와, IH~AL 수준의 모범답안을 만들어주세요.`,
+  intro: (label) => `당신은 OPIc(오픽) 영어 말하기 시험 출제 전문가입니다. 시험 맨 처음에 나오는 "자기소개(Self Introduction)" 질문 1개와, ${opicTargetLevel} 수준의 모범답안을 만들어주세요.`,
   survey: (label) => `당신은 OPIc(오픽) 영어 말하기 시험 출제 전문가입니다. 응시자가 배경설문에서 "${label}"을(를) 관심사로 선택했다고 가정하고, 실제 오픽 콤보셋 구조와 동일하게 같은 주제로 이어지는 질문 3개를 만들어주세요:
 1번 - 묘사(Description) 질문
 2번 - 묘사/루틴/비교 중 1개 유형의 질문 (1번과 다른 각도)
 3번 - 관련된 과거 경험(Past Experience) 질문
-각 질문에 대한 IH~AL 수준의 모범답안도 함께 작성하세요.`,
+각 질문에 대한 ${opicTargetLevel} 수준의 모범답안도 함께 작성하세요.`,
   role: () => `당신은 OPIc(오픽) 영어 말하기 시험 출제 전문가입니다. 실제 오픽의 "롤플레이(Role-Play)" 단계와 동일하게, 하나의 상황(예: 예약/구매/모임 등)에 대해 이어지는 질문 3개를 만들어주세요:
 1번 - 정보를 얻기 위해 상대방에게 3가지 정도 질문하기
 2번 - 문제 상황이 생겼다고 가정하고 대안을 제시하기 (음성메시지 형식)
 3번 - 그 상황과 관련된 본인의 과거 경험 이야기하기
-각 질문에 대한 IH~AL 수준의 모범답안도 함께 작성하세요.`,
+각 질문에 대한 ${opicTargetLevel} 수준의 모범답안도 함께 작성하세요.`,
   twist: () => `당신은 OPIc(오픽) 영어 말하기 시험 출제 전문가입니다. 고난도 "돌발(advanced)" 단계 질문 2개를 만들어주세요:
 1번 - 일상 주제(교통, 기술, 환경 등)에 대한 비교/묘사/루틴 중 1개 유형의 질문
 2번 - 그 주제와 관련된 최근 이슈·뉴스에 대한 의견을 묻는 질문
-각 질문에 대한 IH~AL 수준의 모범답안도 함께 작성하세요.`,
+각 질문에 대한 ${opicTargetLevel} 수준의 모범답안도 함께 작성하세요.`,
 };
 
 async function loadOpicQuestions(stage, label, emoji) {

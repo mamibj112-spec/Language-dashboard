@@ -190,6 +190,46 @@ function parseReply(content) {
   return { main: mainLines.join('\n').trim(), corrections };
 }
 
+// ── 교정 내용을 복습 노트에 누적 저장 ──
+function logCorrections(content) {
+  const { corrections } = parseReply(content);
+  if (!corrections.length) return;
+  const log = JSON.parse(localStorage.getItem('correctionLog') || '[]');
+  corrections.forEach(c => {
+    const m = c.match(/Correction:\s*"([^"]+)"\s*→\s*"([^"]+)"/);
+    if (!m) return;
+    log.unshift({ wrong: m[1], correct: m[2], topic: currentTopic.npc, emoji: currentTopic.emoji, date: new Date().toISOString() });
+  });
+  localStorage.setItem('correctionLog', JSON.stringify(log));
+}
+
+function renderReviewList() {
+  const el = document.getElementById('review-list');
+  const log = JSON.parse(localStorage.getItem('correctionLog') || '[]');
+  const clearBtn = document.getElementById('review-clear-btn');
+  if (clearBtn) clearBtn.classList.toggle('hidden', log.length === 0);
+  if (!log.length) {
+    el.innerHTML = `<div style="font-size:13px;color:#94a3b8;text-align:center;padding:20px 0;">아직 저장된 교정 내용이 없어요.<br>롤플레잉 하다가 AI가 실수를 짚어주면 여기 자동으로 쌓여요.</div>`;
+    return;
+  }
+  el.innerHTML = log.map(item => `
+    <div class="phrase-item" style="cursor:default;">
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;">${item.emoji || ''} ${item.topic || ''} · ${new Date(item.date).toLocaleDateString('ko-KR')}</div>
+      <div style="color:#f87171;font-size:13px;text-decoration:line-through;margin-bottom:4px;">${item.wrong}</div>
+      <div class="phrase-row">
+        <div class="phrase-en" style="color:#4ade80;">${item.correct}</div>
+        <button class="spk-btn" onclick="speak('${item.correct.replace(/'/g, "\\'")}')">🔊</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function clearReviewLog() {
+  if (!confirm('저장된 교정 내용을 전부 삭제할까요?')) return;
+  localStorage.removeItem('correctionLog');
+  renderReviewList();
+}
+
 function renderChat() {
   const el = document.getElementById('chat-msgs');
   el.innerHTML = '';
@@ -280,6 +320,7 @@ async function sendMsg() {
       contents
     });
     chatMsgs.push({ role: 'assistant', content: reply || "Pardon? Could you say that again?" });
+    if (reply) logCorrections(reply);
   } catch (err) {
     chatMsgs.push({ role: 'assistant', content: "❌ " + err.message });
   }
