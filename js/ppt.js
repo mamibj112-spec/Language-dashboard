@@ -7,12 +7,12 @@ let pptLastTopic = 'PPT';
 function renderPptNoteList() {
   const el = document.getElementById('ppt-note-list');
   if (!notesCache.length) {
-    el.innerHTML = `<div style="color:#fbbf24;font-size:13px;margin-bottom:8px;">⚠️ 아직 저장된 기록이 없어요. 먼저 기록 탭에서 기록을 추가해주세요.</div>`;
+    el.innerHTML = `<div style="color:#fbbf24;font-size:15px;margin-bottom:8px;">⚠️ 아직 저장된 기록이 없어요. 먼저 기록 탭에서 기록을 추가해주세요.</div>`;
     return;
   }
   pptSelectedIds = new Set(notesCache.map(n => n.id));
   el.innerHTML = `
-    <div style="font-size:13px;color:#94a3b8;margin-bottom:8px;">PPT에 포함할 기록을 선택하세요 (기본: 전체 선택)</div>
+    <div style="font-size:15px;color:#94a3b8;margin-bottom:8px;">PPT에 포함할 기록을 선택하세요 (기본: 전체 선택)</div>
     <div style="display:flex;flex-direction:column;gap:6px;">
       ${notesCache.map(n => {
         const date = new Date(n.createdAt);
@@ -20,8 +20,8 @@ function renderPptNoteList() {
         return `<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,0.06);cursor:pointer;">
           <input type="checkbox" checked onchange="pptToggleNote('${n.id}', this.checked)" style="width:16px;height:16px;accent-color:#0ea5e9;">
           <div style="flex:1;min-width:0;">
-            <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n.title || '(제목 없음)'}</div>
-            <div style="font-size:11px;color:#94a3b8;">${dateStr}${(n.tags||[]).length ? ' · ' + n.tags.map(t=>'#'+t).join(' ') : ''}</div>
+            <div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n.title || '(제목 없음)'}</div>
+            <div style="font-size:13px;color:#94a3b8;">${dateStr}${(n.tags||[]).length ? ' · ' + n.tags.map(t=>'#'+t).join(' ') : ''}</div>
           </div>
         </label>`;
       }).join('')}
@@ -74,9 +74,9 @@ ${titleInput ? `PPT 제목: ${titleInput}` : ''}
 
     resultEl.innerHTML = slides.map((s, i) => `
       <div style="margin-top:10px;padding:14px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">
-        <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">슬라이드 ${i + 1}</div>
-        <div style="font-weight:700;font-size:15px;margin-bottom:8px;">${s.title}</div>
-        <ul style="margin:0;padding-left:18px;color:#e2e8f0;font-size:13px;line-height:1.7;">
+        <div style="font-size:13px;color:#94a3b8;margin-bottom:4px;">슬라이드 ${i + 1}</div>
+        <div style="font-weight:700;font-size:17px;margin-bottom:8px;">${s.title}</div>
+        <ul style="margin:0;padding-left:18px;color:#e2e8f0;font-size:15px;line-height:1.7;">
           ${(s.bullets || []).map(b => `<li>${b}</li>`).join('')}
         </ul>
       </div>`).join('')

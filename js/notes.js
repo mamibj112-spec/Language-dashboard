@@ -128,8 +128,8 @@ function renderMediaFormPreview() {
       return `
         <div style="position:relative;width:88px;">
           <div style="width:88px;height:88px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;">${thumb}</div>
-          <div style="font-size:10px;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.name || (m.type === 'image' ? '사진' : m.type === 'video' ? '동영상' : m.type === 'audio' ? '음성' : '문서')}</div>
-          <button onclick="removeNoteMediaAt(${i})" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;border:none;font-size:12px;cursor:pointer;">✕</button>
+          <div style="font-size:12px;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.name || (m.type === 'image' ? '사진' : m.type === 'video' ? '동영상' : m.type === 'audio' ? '음성' : '문서')}</div>
+          <button onclick="removeNoteMediaAt(${i})" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;border:none;font-size:14px;cursor:pointer;">✕</button>
         </div>`;
     }).join('')}
   </div>`;
@@ -204,9 +204,9 @@ function openNoteForm(editId) {
   box.innerHTML = `
     <div class="card">
       <div style="font-weight:700;margin-bottom:10px;">${editing ? '✏️ 기록 수정' : '➕ 새 기록'}</div>
-      <input type="text" id="notes-form-title" placeholder="제목" value="${editing ? editing.title.replace(/"/g, '&quot;') : ''}" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;margin-bottom:8px;">
-      <textarea id="notes-form-content" placeholder="배운 내용을 적어주세요 (캡처한 화면은 여기에 Ctrl+V로 붙여넣기 가능)" rows="5" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;margin-bottom:8px;resize:vertical;" onpaste="handleNotePaste(event)">${editing ? editing.content : ''}</textarea>
-      <input type="text" id="notes-form-tags" placeholder="태그 (쉼표로 구분, 예: 엑셀, 회의)" value="${editing && editing.tags ? editing.tags.join(', ') : ''}" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;margin-bottom:8px;">
+      <input type="text" id="notes-form-title" placeholder="제목" value="${editing ? editing.title.replace(/"/g, '&quot;') : ''}" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:16px;margin-bottom:8px;">
+      <textarea id="notes-form-content" placeholder="배운 내용을 적어주세요 (캡처한 화면은 여기에 Ctrl+V로 붙여넣기 가능)" rows="5" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:16px;margin-bottom:8px;resize:vertical;" onpaste="handleNotePaste(event)">${editing ? editing.content : ''}</textarea>
+      <input type="text" id="notes-form-tags" placeholder="태그 (쉼표로 구분, 예: 엑셀, 회의)" value="${editing && editing.tags ? editing.tags.join(', ') : ''}" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:16px;margin-bottom:8px;">
       <div style="display:flex;gap:8px;">
         <label class="complete-btn" style="flex:1;display:block;text-align:center;background:rgba(255,255,255,0.08);cursor:pointer;">
           📷 촬영하기
@@ -368,18 +368,18 @@ function goToNoteByTitle(title) {
 function renderAskChat() {
   const el = document.getElementById('ask-chat-messages');
   if (!askChatMessages.length) {
-    el.innerHTML = `<div style="text-align:center;color:#94a3b8;padding:24px 0;font-size:13px;">저장된 기록에 대해 무엇이든 물어보세요.<br>예: "VLOOKUP 어떻게 쓰는지 정리한 거 있어?"</div>`;
+    el.innerHTML = `<div style="text-align:center;color:#94a3b8;padding:24px 0;font-size:15px;">저장된 기록에 대해 무엇이든 물어보세요.<br>예: "VLOOKUP 어떻게 쓰는지 정리한 거 있어?"</div>`;
     return;
   }
   el.innerHTML = askChatMessages.map(m => {
     if (m.role === 'user') {
-      return `<div style="align-self:flex-end;max-width:85%;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;padding:10px 14px;border-radius:14px 14px 2px 14px;font-size:14px;line-height:1.6;">${m.text}</div>`;
+      return `<div style="align-self:flex-end;max-width:85%;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;padding:10px 14px;border-radius:14px 14px 2px 14px;font-size:16px;line-height:1.6;">${m.text}</div>`;
     }
     const sourcesHtml = (m.sources && m.sources.length)
-      ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">${m.sources.map(s => `<button class="tab-btn" onclick="goToNoteByTitle('${s.replace(/'/g, "\\'")}')" style="font-size:11px;padding:4px 10px;">📒 ${s}</button>`).join('')}</div>`
+      ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">${m.sources.map(s => `<button class="tab-btn" onclick="goToNoteByTitle('${s.replace(/'/g, "\\'")}')" style="font-size:13px;padding:4px 10px;">📒 ${s}</button>`).join('')}</div>`
       : '';
-    return `<div style="align-self:flex-start;max-width:90%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);padding:10px 14px;border-radius:14px 14px 14px 2px;font-size:14px;line-height:1.7;white-space:pre-wrap;">${m.text}${sourcesHtml}</div>`;
-  }).join('') + (askChatLoading ? `<div style="align-self:flex-start;color:#94a3b8;font-size:13px;">⏳ 기록을 살펴보는 중...</div>` : '');
+    return `<div style="align-self:flex-start;max-width:90%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);padding:10px 14px;border-radius:14px 14px 14px 2px;font-size:16px;line-height:1.7;white-space:pre-wrap;">${m.text}${sourcesHtml}</div>`;
+  }).join('') + (askChatLoading ? `<div style="align-self:flex-start;color:#94a3b8;font-size:15px;">⏳ 기록을 살펴보는 중...</div>` : '');
   el.scrollIntoView({ behavior: 'smooth', block: 'end' });
 }
 
@@ -458,7 +458,7 @@ function renderCompanyDashboard() {
   const statCard = (emoji, num, label) => `
     <div style="flex:1;min-width:80px;text-align:center;padding:14px 8px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">
       <div style="font-size:22px;font-weight:700;">${emoji} ${num}</div>
-      <div style="font-size:12px;color:#94a3b8;margin-top:4px;">${label}</div>
+      <div style="font-size:14px;color:#94a3b8;margin-top:4px;">${label}</div>
     </div>`;
 
   const recent = notes.slice(0, 5);
@@ -472,17 +472,17 @@ function renderCompanyDashboard() {
       companyDashObjectUrls.set(n.id, url);
       thumb = firstMedia.type === 'image'
         ? `<img src="${url}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;flex-shrink:0;">`
-        : `<div style="width:48px;height:48px;border-radius:8px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${firstMedia.type === 'video' ? '🎬' : firstMedia.type === 'audio' ? '🎙️' : (DOC_EXT_ICON[fileExt(firstMedia.name)] || '📄')}</div>`;
+        : `<div style="width:48px;height:48px;border-radius:8px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${firstMedia.type === 'video' ? '🎬' : firstMedia.type === 'audio' ? '🎙️' : (DOC_EXT_ICON[fileExt(firstMedia.name)] || '📄')}</div>`;
     }
     return `
       <div class="tab-btn" onclick="switchTab('notes')" style="display:flex;align-items:center;gap:10px;text-align:left;width:100%;box-sizing:border-box;padding:10px 12px;margin-bottom:8px;">
         ${thumb}
         <div style="flex:1;min-width:0;">
-          <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n.title || '(제목 없음)'}</div>
-          <div style="font-size:11px;color:#94a3b8;">${dateStr}${(n.tags || []).length ? ' · ' + n.tags.map(t => '#' + t).join(' ') : ''}</div>
+          <div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n.title || '(제목 없음)'}</div>
+          <div style="font-size:13px;color:#94a3b8;">${dateStr}${(n.tags || []).length ? ' · ' + n.tags.map(t => '#' + t).join(' ') : ''}</div>
         </div>
       </div>`;
-  }).join('') : `<div style="text-align:center;color:#94a3b8;padding:20px 0;font-size:13px;">아직 기록이 없어요.</div>`;
+  }).join('') : `<div style="text-align:center;color:#94a3b8;padding:20px 0;font-size:15px;">아직 기록이 없어요.</div>`;
 
   el.innerHTML = `
     <div class="card">
@@ -500,9 +500,9 @@ function renderCompanyDashboard() {
         ${statCard('🏷️', topTags.length, '사용 중인 태그')}
       </div>
       ${topTags.length ? `
-        <div style="font-size:12px;color:#94a3b8;margin-bottom:6px;">자주 쓰는 태그</div>
+        <div style="font-size:14px;color:#94a3b8;margin-bottom:6px;">자주 쓰는 태그</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
-          ${topTags.map(([tag, count]) => `<span style="font-size:12px;background:rgba(255,255,255,0.08);padding:4px 10px;border-radius:10px;color:#e2e8f0;">#${tag} ${count}</span>`).join('')}
+          ${topTags.map(([tag, count]) => `<span style="font-size:14px;background:rgba(255,255,255,0.08);padding:4px 10px;border-radius:10px;color:#e2e8f0;">#${tag} ${count}</span>`).join('')}
         </div>
       ` : ''}
     </div>
@@ -522,7 +522,7 @@ function renderNotesList() {
   const allTags = [...new Set(notesCache.flatMap(n => n.tags || []))];
   const tagFilterEl = document.getElementById('notes-tag-filter');
   tagFilterEl.innerHTML = allTags.map(tag => `
-    <button class="tab-btn${notesActiveTagFilter === tag ? ' active' : ''}" onclick="notesActiveTagFilter = notesActiveTagFilter === '${tag}' ? null : '${tag}'; renderNotesList()" style="flex:none;font-size:12px;padding:6px 10px;">#${tag}</button>
+    <button class="tab-btn${notesActiveTagFilter === tag ? ' active' : ''}" onclick="notesActiveTagFilter = notesActiveTagFilter === '${tag}' ? null : '${tag}'; renderNotesList()" style="flex:none;font-size:14px;padding:6px 10px;">#${tag}</button>
   `).join('');
 
   let filtered = notesCache;
@@ -539,7 +539,7 @@ function renderNotesList() {
 
   const listEl = document.getElementById('notes-list');
   if (!filtered.length) {
-    listEl.innerHTML = `<div style="text-align:center;color:#94a3b8;padding:24px 0;font-size:13px;">${notesCache.length ? '검색 결과가 없어요.' : '아직 기록이 없어요. 위에서 추가해보세요!'}</div>`;
+    listEl.innerHTML = `<div style="text-align:center;color:#94a3b8;padding:24px 0;font-size:15px;">${notesCache.length ? '검색 결과가 없어요.' : '아직 기록이 없어요. 위에서 추가해보세요!'}</div>`;
     return;
   }
 
@@ -554,32 +554,32 @@ function renderNotesList() {
       if (m.type === 'image') return `
         <div style="position:relative;">
           <img src="${url}" onclick="openMediaLightbox('${url}','image','${(m.name || 'photo.jpg').replace(/'/g, "\\'")}')" style="max-width:180px;max-height:180px;border-radius:10px;cursor:zoom-in;display:block;">
-          <button onclick="event.stopPropagation();shareMedia('${url}','${(m.name||'photo.jpg').replace(/'/g,"\\'")}');" style="position:absolute;bottom:4px;right:4px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:13px;cursor:pointer;">⬇️</button>
+          <button onclick="event.stopPropagation();shareMedia('${url}','${(m.name||'photo.jpg').replace(/'/g,"\\'")}');" style="position:absolute;bottom:4px;right:4px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:15px;cursor:pointer;">⬇️</button>
         </div>`;
       if (m.type === 'video') return `
         <div style="position:relative;">
           <video src="${url}" controls style="max-width:240px;border-radius:10px;display:block;"></video>
-          <button onclick="shareMedia('${url}','${(m.name||'video.mp4').replace(/'/g,"\\'")}');" style="position:absolute;bottom:4px;right:4px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:13px;cursor:pointer;">⬇️</button>
+          <button onclick="shareMedia('${url}','${(m.name||'video.mp4').replace(/'/g,"\\'")}');" style="position:absolute;bottom:4px;right:4px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:15px;cursor:pointer;">⬇️</button>
         </div>`;
       if (m.type === 'audio') return `
         <div style="display:flex;align-items:center;gap:6px;">
           <audio src="${url}" controls style="height:36px;max-width:220px;"></audio>
-          <button onclick="shareMedia('${url}','${(m.name||'voice.webm').replace(/'/g,"\\'")}');" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.1);color:#fff;border:none;font-size:13px;cursor:pointer;flex-shrink:0;">⬇️</button>
+          <button onclick="shareMedia('${url}','${(m.name||'voice.webm').replace(/'/g,"\\'")}');" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.1);color:#fff;border:none;font-size:15px;cursor:pointer;flex-shrink:0;">⬇️</button>
         </div>`;
-      return `<button onclick="shareMedia('${url}','${(m.name||'document').replace(/'/g,"\\'")}');" style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:12px;cursor:pointer;">${DOC_EXT_ICON[fileExt(m.name)] || '📄'} ${m.name || '문서'} <span style="color:#94a3b8;">(${formatBytes(m.blob.size)})</span></button>`;
+      return `<button onclick="shareMedia('${url}','${(m.name||'document').replace(/'/g,"\\'")}');" style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:14px;cursor:pointer;">${DOC_EXT_ICON[fileExt(m.name)] || '📄'} ${m.name || '문서'} <span style="color:#94a3b8;">(${formatBytes(m.blob.size)})</span></button>`;
     }).join('')}</div>` : '';
     return `
       <div class="card" style="margin-top:10px;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-          <div style="font-weight:700;font-size:15px;">${n.title || '(제목 없음)'}</div>
-          <div style="font-size:12px;color:#94a3b8;white-space:nowrap;">${dateStr}</div>
+          <div style="font-weight:700;font-size:17px;">${n.title || '(제목 없음)'}</div>
+          <div style="font-size:14px;color:#94a3b8;white-space:nowrap;">${dateStr}</div>
         </div>
-        ${n.content ? `<div style="font-size:13px;color:#e2e8f0;line-height:1.6;margin-top:6px;white-space:pre-wrap;">${n.content}</div>` : ''}
+        ${n.content ? `<div style="font-size:15px;color:#e2e8f0;line-height:1.6;margin-top:6px;white-space:pre-wrap;">${n.content}</div>` : ''}
         ${mediaHtml}
-        ${(n.tags || []).length ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">${n.tags.map(t => `<span style="font-size:11px;background:rgba(255,255,255,0.08);padding:3px 8px;border-radius:8px;color:#94a3b8;">#${t}</span>`).join('')}</div>` : ''}
+        ${(n.tags || []).length ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">${n.tags.map(t => `<span style="font-size:13px;background:rgba(255,255,255,0.08);padding:3px 8px;border-radius:8px;color:#94a3b8;">#${t}</span>`).join('')}</div>` : ''}
         <div style="display:flex;gap:8px;margin-top:10px;">
-          <button class="tab-btn" onclick="openNoteForm('${n.id}')" style="font-size:12px;">✏️ 수정</button>
-          <button class="tab-btn" onclick="deleteNote('${n.id}')" style="font-size:12px;">🗑 삭제</button>
+          <button class="tab-btn" onclick="openNoteForm('${n.id}')" style="font-size:14px;">✏️ 수정</button>
+          <button class="tab-btn" onclick="deleteNote('${n.id}')" style="font-size:14px;">🗑 삭제</button>
         </div>
       </div>`;
   }).join('');

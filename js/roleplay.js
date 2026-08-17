@@ -209,13 +209,13 @@ function renderReviewList() {
   const clearBtn = document.getElementById('review-clear-btn');
   if (clearBtn) clearBtn.classList.toggle('hidden', log.length === 0);
   if (!log.length) {
-    el.innerHTML = `<div style="font-size:13px;color:#94a3b8;text-align:center;padding:20px 0;">아직 저장된 교정 내용이 없어요.<br>롤플레잉 하다가 AI가 실수를 짚어주면 여기 자동으로 쌓여요.</div>`;
+    el.innerHTML = `<div style="font-size:15px;color:#94a3b8;text-align:center;padding:20px 0;">아직 저장된 교정 내용이 없어요.<br>롤플레잉 하다가 AI가 실수를 짚어주면 여기 자동으로 쌓여요.</div>`;
     return;
   }
   el.innerHTML = log.map(item => `
     <div class="phrase-item" style="cursor:default;">
-      <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;">${item.emoji || ''} ${item.topic || ''} · ${new Date(item.date).toLocaleDateString('ko-KR')}</div>
-      <div style="color:#f87171;font-size:13px;text-decoration:line-through;margin-bottom:4px;">${item.wrong}</div>
+      <div style="font-size:13px;color:#94a3b8;margin-bottom:6px;">${item.emoji || ''} ${item.topic || ''} · ${new Date(item.date).toLocaleDateString('ko-KR')}</div>
+      <div style="color:#f87171;font-size:15px;text-decoration:line-through;margin-bottom:4px;">${item.wrong}</div>
       <div class="phrase-row">
         <div class="phrase-en" style="color:#4ade80;">${item.correct}</div>
         <button class="spk-btn" onclick="speak('${item.correct.replace(/'/g, "\\'")}')">🔊</button>
@@ -249,7 +249,7 @@ function renderChat() {
         div.innerHTML = `
           <div class="msg-label">
             ${currentTopic.emoji} ${currentTopic.npc}
-            <button class="spk-btn" style="font-size:11px;padding:1px 6px" onclick="speak(\`${mainText.replace(/`/g,'\\`')}\`)">🔊</button>
+            <button class="spk-btn" style="font-size:13px;padding:1px 6px" onclick="speak(\`${mainText.replace(/`/g,'\\`')}\`)">🔊</button>
           </div>
           <div class="msg-row">
             <div class="bubble" id="bubble-${i}" onclick="toggleTranslate(${i}, \`${mainText.replace(/`/g,'\\`')}\`)">

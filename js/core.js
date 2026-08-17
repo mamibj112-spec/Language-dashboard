@@ -115,8 +115,17 @@ async function speakNative(text) {
 }
 
 // ── Tab switch ──
-const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','review','ppt','opic','notes','companyDash','companyAsk'];
+const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','review','ppt','opic','notes','companyDash','companyAsk','plan60Today','plan60Test','plan60Progress'];
 const DASHBOARDS = {
+  plan60: {
+    label: '🗓️ 60일플랜',
+    title: '60일 회화 플랜',
+    tabs: [
+      { id: 'plan60Today', label: '📅 오늘' },
+      { id: 'plan60Test', label: '📝 레벨테스트' },
+      { id: 'plan60Progress', label: '📊 진행현황' },
+    ],
+  },
   english: {
     label: '💬 영어회화',
     title: '영어 회화',
@@ -215,6 +224,15 @@ function switchTab(name, skipHistory) {
   }
   if (name === 'review') {
     renderReviewList();
+  }
+  if (name === 'plan60Today') {
+    renderPlan60Today();
+  }
+  if (name === 'plan60Test') {
+    renderPlan60Test();
+  }
+  if (name === 'plan60Progress') {
+    renderPlan60Progress();
   }
   if (!skipHistory) pushHistoryState();
 }
