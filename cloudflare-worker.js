@@ -30,11 +30,9 @@ async function fetchLessonContext(videoId) {
     try { description = JSON.parse('"' + descMatch[1] + '"'); } catch (e) { description = descMatch[1]; }
   }
   if (!description) {
-    const hasShort = html.includes('shortDescription');
-    const hasPlayerResp = html.includes('ytInitialPlayerResponse');
-    const idx = html.indexOf('shortDescription');
-    const around = idx >= 0 ? html.slice(idx, idx + 200) : '(not found)';
-    throw new Error(`DEBUG len=${html.length} hasShort=${hasShort} hasPR=${hasPlayerResp} around=${around}`);
+    const idx = html.indexOf('videoDetails');
+    const around = idx >= 0 ? html.slice(idx, idx + 400) : '(videoDetails not found)';
+    throw new Error(`DEBUG2 around=${around}`);
   }
 
   let transcript = "";
