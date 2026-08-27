@@ -36,20 +36,23 @@ function lesson96Complete(n) {
   }
 }
 
+const LESSON96_JSON_SPEC = `{
+  "summary": "이 주제의 핵심 개념을 초중급 학습자 눈높이로 쉽게 설명 (5~7문장, 원어민이 실제로 느끼는 뉘앙스와 왜 이 표현이 중요한지 위주로 충분히 풀어서)",
+  "points": [{"point": "핵심 문법/표현 포인트 이름", "explain": "구체적인 설명 (2~3문장, 예시 포함)"}] (4~6개),
+  "examples": [{"en": "실생활 회화체 예문", "ko": "한국어 번역"}] (10개, 쉬운 것부터 응용까지 난이도 순으로),
+  "dialogue": {"situation": "이 대화가 벌어지는 상황 한 줄 설명", "lines": [{"speaker": "A 또는 B", "en": "영어 대사", "ko": "한국어 번역"}]} (오늘 배운 패턴/표현이 자연스럽게 여러 번 등장하는 대화문 6~8줄),
+  "practice": [{"ko": "영작 연습용 한국어 문장", "en": "영어 정답"}] (8개, 앞서 나온 예문보다 조금씩 응용된 문장으로)
+}`;
+
 function lesson96StudyPrompt(title) {
   return `당신은 한국인 학습자를 위한 영어회화 코치입니다. 아래는 한 영어회화 강의 영상의 제목입니다.
 
 "${title}"
 
-이 영상을 직접 보지 않은 상태에서, 이 제목이 다루는 것으로 보이는 핵심 문법/표현 주제를 학습자가 이해하고 연습할 수 있도록 새로운 학습자료를 만들어주세요. (영상 스크립트를 옮기는 게 아니라, 같은 주제에 대해 당신이 직접 설명과 예문을 새로 작성하는 것입니다)
+이 영상을 직접 보지 않은 상태에서, 이 제목이 다루는 것으로 보이는 핵심 문법/표현 주제를 학습자가 10~15분 정도 붙잡고 충분히 연습할 수 있는 학습자료로 만들어주세요. (영상 스크립트를 옮기는 게 아니라, 같은 주제에 대해 당신이 직접 설명과 예문을 새로 작성하는 것입니다. 내용을 아끼지 말고 풍부하게 작성하세요)
 
 다음 JSON 형식으로만 답하세요 (다른 설명 없이 JSON만):
-{
-  "summary": "이 주제의 핵심 개념을 초중급 학습자 눈높이로 쉽게 설명 (3~5문장, 원어민이 실제로 느끼는 뉘앙스 위주)",
-  "points": [{"point": "핵심 문법/표현 포인트 이름", "explain": "짧은 설명"}] (2~4개),
-  "examples": [{"en": "이 주제를 활용한 실생활 회화체 예문", "ko": "한국어 번역"}] (5개),
-  "practice": [{"ko": "영작 연습용 한국어 문장", "en": "영어 정답"}] (3개)
-}`;
+${LESSON96_JSON_SPEC}`;
 }
 
 function lesson96StudyPromptFromDesc(title, description) {
@@ -62,15 +65,10 @@ function lesson96StudyPromptFromDesc(title, description) {
 ${description}
 """
 
-위 설명에서 실제로 다루는 문법 포인트와 표현을 참고해서, 학습자가 이 강의의 핵심 내용을 이해하고 복습할 수 있는 학습자료를 당신의 말로 새로 정리해주세요. (원문을 그대로 옮기지 말고, 강의에서 다루는 개념을 참고해서 직접 설명과 예문을 작성하세요)
+위 설명에서 실제로 다루는 문법 포인트와 표현을 참고해서, 학습자가 이 강의의 핵심 내용을 10~15분 정도 붙잡고 충분히 이해·복습·연습할 수 있는 학습자료를 당신의 말로 새로 정리해주세요. (원문을 그대로 옮기지 말고, 강의에서 다루는 개념을 참고해서 직접 설명과 예문을 작성하세요. 내용을 아끼지 말고 풍부하게 작성하세요)
 
 다음 JSON 형식으로만 답하세요 (다른 설명 없이 JSON만):
-{
-  "summary": "이 강의에서 실제로 다루는 핵심 내용을 초중급 학습자 눈높이로 쉽게 요약 (3~5문장)",
-  "points": [{"point": "강의에서 다룬 핵심 문법/표현 포인트 이름", "explain": "짧은 설명"}] (2~5개),
-  "examples": [{"en": "강의 내용과 관련된 실생활 회화체 예문", "ko": "한국어 번역"}] (5개),
-  "practice": [{"ko": "영작 연습용 한국어 문장", "en": "영어 정답"}] (3개)
-}`;
+${LESSON96_JSON_SPEC}`;
 }
 
 async function lesson96GenerateStudy(n) {
@@ -108,6 +106,11 @@ function lesson96TogglePractice(el) {
   if (a) a.style.display = a.style.display === 'none' ? 'block' : 'none';
 }
 
+function lesson96SpeakDialogue(n, i) {
+  const c = lesson96Study[n];
+  if (c && c.dialogue && c.dialogue.lines[i]) speak(c.dialogue.lines[i].en);
+}
+
 function lesson96StudySection(lesson) {
   const content = lesson96Study[lesson.n];
   if (!content) {
@@ -142,6 +145,20 @@ function lesson96StudySection(lesson) {
             <div class="pattern-ex-ko">${ex.ko}</div>
           </div>`).join('')}
       </div>
+      ${content.dialogue ? `
+      <div class="card" style="margin-bottom:8px;">
+        <div class="card-header">
+          <span class="card-emoji">💬</span>
+          <div><div class="card-title">미니 대화문</div><div class="card-sub">${content.dialogue.situation || '오늘 배운 표현이 들어간 대화'}</div></div>
+        </div>
+        ${content.dialogue.lines.map((l, i) => `
+          <div class="dl-wrap${l.speaker === 'B' ? ' me' : ''}">
+            <div class="dl-bubble${l.speaker === 'B' ? ' me' : ''}">
+              <div class="dl-en">${l.en} <button class="spk-btn" onclick="event.stopPropagation();lesson96SpeakDialogue(${lesson.n},${i})">🔊</button></div>
+              <div class="dl-ko">${l.ko}</div>
+            </div>
+          </div>`).join('')}
+      </div>` : ''}
       <div class="card">
         <div class="card-header">
           <span class="card-emoji">✍️</span>
