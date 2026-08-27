@@ -30,7 +30,11 @@ async function fetchLessonContext(videoId) {
     try { description = JSON.parse('"' + descMatch[1] + '"'); } catch (e) { description = descMatch[1]; }
   }
   if (!description) {
-    throw new Error(`설명 추출 실패 DEBUG len=${html.length} status=${watchRes.status} head=${html.slice(0, 150).replace(/\s+/g, ' ')}`);
+    const hasShort = html.includes('shortDescription');
+    const hasPlayerResp = html.includes('ytInitialPlayerResponse');
+    const idx = html.indexOf('shortDescription');
+    const around = idx >= 0 ? html.slice(idx, idx + 200) : '(not found)';
+    throw new Error(`DEBUG len=${html.length} hasShort=${hasShort} hasPR=${hasPlayerResp} around=${around}`);
   }
 
   let transcript = "";
