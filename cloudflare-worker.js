@@ -19,7 +19,15 @@ const BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 // 자막은 "되면 좋고 안 되면 마는" 보너스로 취급하고, 항상 존재하는 영상 설명을 기본 컨텍스트로 삼는다.
 async function fetchLessonContext(videoId) {
   const watchRes = await fetch(`https://www.youtube.com/watch?v=${videoId}&hl=ko`, {
-    headers: { "User-Agent": BROWSER_UA, "Accept-Language": "ko-KR,ko;q=0.9" },
+    headers: {
+      "User-Agent": BROWSER_UA,
+      "Accept-Language": "ko-KR,ko;q=0.9",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Cookie": "CONSENT=YES+cb; PREF=hl=ko",
+      "sec-fetch-mode": "navigate",
+      "sec-fetch-site": "none",
+      "sec-fetch-dest": "document",
+    },
   });
   if (!watchRes.ok) throw new Error(`영상 페이지를 불러오지 못했습니다 (status ${watchRes.status})`);
   const html = await watchRes.text();
