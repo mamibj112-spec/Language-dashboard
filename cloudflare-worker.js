@@ -21,13 +21,16 @@ async function fetchLessonContext(videoId) {
   const watchRes = await fetch(`https://www.youtube.com/watch?v=${videoId}&hl=ko`, {
     headers: { "User-Agent": BROWSER_UA, "Accept-Language": "ko-KR,ko;q=0.9" },
   });
-  if (!watchRes.ok) throw new Error("영상 페이지를 불러오지 못했습니다");
+  if (!watchRes.ok) throw new Error(`영상 페이지를 불러오지 못했습니다 (status ${watchRes.status})`);
   const html = await watchRes.text();
 
   let description = "";
   const descMatch = html.match(/"shortDescription":"((?:[^"\\]|\\.)*)"/);
   if (descMatch) {
     try { description = JSON.parse('"' + descMatch[1] + '"'); } catch (e) { description = descMatch[1]; }
+  }
+  if (!description) {
+    throw new Error(`설명 추출 실패 DEBUG len=${html.length} status=${watchRes.status} head=${html.slice(0, 150).replace(/\s+/g, ' ')}`);
   }
 
   let transcript = "";
