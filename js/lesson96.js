@@ -52,19 +52,17 @@ function lesson96StudyPrompt(title) {
 }`;
 }
 
-function lesson96StudyPromptFromContext(title, description, transcript) {
-  const trimmedTranscript = transcript && transcript.length > 6000 ? transcript.slice(0, 6000) + ' …' : transcript;
-  const contextBlock = trimmedTranscript
-    ? `영상 설명:\n"""\n${description}\n"""\n\n영상 자막(음성 자동 인식, 오타 있을 수 있음):\n"""\n${trimmedTranscript}\n"""`
-    : `영상 설명:\n"""\n${description}\n"""`;
-
-  return `당신은 한국인 학습자를 위한 영어회화 코치입니다. 아래는 영어회화 강의 영상의 제목과 실제 정보입니다.
+function lesson96StudyPromptFromDesc(title, description) {
+  return `당신은 한국인 학습자를 위한 영어회화 코치입니다. 아래는 영어회화 강의 영상의 제목과, 그 영상의 실제 설명(창작자가 직접 작성)입니다.
 
 제목: "${title}"
 
-${contextBlock}
+영상 설명:
+"""
+${description}
+"""
 
-위 정보에서 실제로 다루는 문법 포인트와 표현을 참고해서, 학습자가 이 강의의 핵심 내용을 이해하고 복습할 수 있는 학습자료를 당신의 말로 새로 정리해주세요. (원문을 그대로 옮기지 말고, 강의에서 다루는 개념을 참고해서 직접 설명과 예문을 작성하세요)
+위 설명에서 실제로 다루는 문법 포인트와 표현을 참고해서, 학습자가 이 강의의 핵심 내용을 이해하고 복습할 수 있는 학습자료를 당신의 말로 새로 정리해주세요. (원문을 그대로 옮기지 말고, 강의에서 다루는 개념을 참고해서 직접 설명과 예문을 작성하세요)
 
 다음 JSON 형식으로만 답하세요 (다른 설명 없이 JSON만):
 {
@@ -75,37 +73,21 @@ ${contextBlock}
 }`;
 }
 
-async function lesson96FetchContext(videoId) {
-  const res = await fetch(`${workerUrl}/transcript?v=${videoId}`);
-  const data = await res.json();
-  if (!res.ok || data.error || (!data.description && !data.transcript)) throw new Error(data.error || '영상 정보를 가져오지 못했어요');
-  return { description: data.description || '', transcript: data.transcript || '' };
-}
-
 async function lesson96GenerateStudy(n) {
   const btn = document.getElementById('lesson96-study-btn-' + n);
   const errEl = document.getElementById('lesson96-study-err-' + n);
   if (!geminiApiKey) { errEl.innerHTML = `<div style="margin-top:8px;color:#fbbf24;font-size:12px;">${NO_KEY_MSG}</div>`; return; }
 
   btn.disabled = true;
-  btn.textContent = '⏳ 강의 정보 확인하는 중...';
+  btn.textContent = '⏳ 학습자료 만드는 중...';
   errEl.innerHTML = '';
 
   const lesson = LESSON96[n - 1];
-  let context = null;
-  try {
-    context = await lesson96FetchContext(lesson.id);
-  } catch (e) {
-    context = null;
-  }
-
-  btn.textContent = '⏳ 학습자료 만드는 중...';
 
   try {
-    const prompt = context ? lesson96StudyPromptFromContext(lesson.title, context.description, context.transcript) : lesson96StudyPrompt(lesson.title);
+    const prompt = lesson.desc ? lesson96StudyPromptFromDesc(lesson.title, lesson.desc) : lesson96StudyPrompt(lesson.title);
     const content = await geminiJSON(prompt);
-    content.fromTranscript = !!(context && context.transcript);
-    content.fromDescription = !!(context && context.description);
+    content.fromDescription = !!lesson.desc;
     lesson96Study[n] = content;
     localStorage.setItem('lesson96_study', JSON.stringify(lesson96Study));
     renderLesson96();
@@ -143,7 +125,7 @@ function lesson96StudySection(lesson) {
           <span class="card-emoji">📐</span>
           <div>
             <div class="card-title">핵심 개념</div>
-            <div class="card-sub">${content.fromTranscript ? '✅ 실제 강의 자막 기반으로 정리했어요' : content.fromDescription ? '✅ 실제 강의 설명 기반으로 정리했어요' : '⚠️ 강의 정보를 찾지 못해 제목만 보고 추측해서 만들었어요'}</div>
+            <div class="card-sub">${content.fromDescription ? '✅ 실제 강의 설명 기반으로 정리했어요' : '⚠️ 강의 정보를 찾지 못해 제목만 보고 추측해서 만들었어요'}</div>
           </div>
         </div>
         <div style="font-size:13px;line-height:1.7;color:#e2e8f0;margin-bottom:10px;">${content.summary}</div>
