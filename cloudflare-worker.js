@@ -37,11 +37,7 @@ async function fetchLessonContext(videoId) {
   if (descMatch) {
     try { description = JSON.parse('"' + descMatch[1] + '"'); } catch (e) { description = descMatch[1]; }
   }
-  if (!description) {
-    const idx = html.indexOf('videoDetails');
-    const around = idx >= 0 ? html.slice(idx, idx + 400) : '(videoDetails not found)';
-    throw new Error(`DEBUG2 around=${around}`);
-  }
+  if (!description) throw new Error("이 영상의 설명을 가져오지 못했습니다");
 
   let transcript = "";
   try {
