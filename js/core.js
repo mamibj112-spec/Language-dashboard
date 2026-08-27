@@ -115,7 +115,7 @@ async function speakNative(text) {
 }
 
 // ── Tab switch ──
-const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','review','ppt','opic','notes','companyDash','companyAsk','plan60Today','plan60Test','plan60Progress'];
+const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','review','ppt','opic','notes','companyDash','companyAsk','plan60Today','plan60Test','plan60Progress','lesson96'];
 const DASHBOARDS = {
   plan60: {
     label: '🗓️ 60일플랜',
@@ -124,6 +124,13 @@ const DASHBOARDS = {
       { id: 'plan60Today', label: '📅 오늘' },
       { id: 'plan60Test', label: '📝 레벨테스트' },
       { id: 'plan60Progress', label: '📊 진행현황' },
+    ],
+  },
+  lesson96: {
+    label: '📺 96강',
+    title: '왕초보 영어회화 96강',
+    tabs: [
+      { id: 'lesson96', label: '📺 강의목록' },
     ],
   },
   english: {
@@ -233,6 +240,9 @@ function switchTab(name, skipHistory) {
   }
   if (name === 'plan60Progress') {
     renderPlan60Progress();
+  }
+  if (name === 'lesson96') {
+    renderLesson96();
   }
   if (!skipHistory) pushHistoryState();
 }
