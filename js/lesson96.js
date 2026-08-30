@@ -45,8 +45,11 @@ const LESSON96_JSON_SPEC = `{
   "points": [
     {
       "point": "핵심 문법/표현 포인트 이름 (강의에서 실제로 다루는 순서대로)",
-      "explain": "이 포인트가 무엇이고 원어민이 실제로 어떤 뉘앙스로 쓰는지 구체적으로 설명 (3~4문장)",
-      "examples": [{"en": "이 포인트 하나만 활용한 실생활 회화체 예문", "ko": "한국어 번역"}] (이 포인트에 대한 예문 3개)
+      "explain": "이 포인트가 무엇이고 원어민이 실제로 어떻게, 왜 이렇게 쓰는지 아주 구체적으로 설명 (6~8문장, 짧게 뭉뚱그리지 말고 이유와 실제 뉘앙스까지 풍부하게 풀어서)",
+      "tip": "학습자가 이 포인트에서 실수하기 쉬운 부분이나 꼭 기억해야 할 주의사항 (2~3문장)",
+      "compare": "헷갈리기 쉬운 비슷한 표현이 있다면 그것과 무엇이 다른지 비교 설명 (2~3문장). 비교할만한 게 정말 없으면 빈 문자열 \\"\\"",
+      "examples": [{"en": "이 포인트 하나만 활용한 실생활 회화체 예문", "ko": "한국어 번역"}] (이 포인트에 대한 예문 5개, 상황을 다양하게),
+      "check": [{"ko": "이 포인트만 확인하는 짧은 영작 문제용 한국어 문장", "en": "영어 정답"}] (이 포인트 바로 확인 문제 2개)
     }
   ] (4~6개, 이 순서 그대로 학습자가 하나씩 익혀나갈 겁니다),
   "dialogue": {"situation": "이 대화가 벌어지는 상황 한 줄 설명", "lines": [{"speaker": "A 또는 B", "en": "영어 대사", "ko": "한국어 번역"}]} (위에서 배운 포인트들을 모두 종합해서 자연스럽게 활용하는 대화문 6~8줄),
@@ -163,11 +166,30 @@ function lesson96PointCard(lesson, content, pointIdx) {
         </div>
       </div>
       <div style="font-size:13px;line-height:1.7;color:var(--ink-soft);margin-bottom:12px;">${p.explain}</div>
+      ${p.tip ? `
+        <div style="background:var(--warning-wash);border-left:3px solid var(--warning);border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:700;color:var(--warning);margin-bottom:4px;">⚠️ 이건 꼭 기억하세요</div>
+          <div style="font-size:13px;line-height:1.6;color:var(--ink-soft);">${p.tip}</div>
+        </div>` : ''}
+      ${p.compare ? `
+        <div style="background:var(--accent-wash);border-left:3px solid var(--accent);border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:700;color:var(--accent-strong);margin-bottom:4px;">🔄 헷갈리는 표현과 비교</div>
+          <div style="font-size:13px;line-height:1.6;color:var(--ink-soft);">${p.compare}</div>
+        </div>` : ''}
       ${(p.examples || []).map((ex, i) => `
         <div class="pattern-ex">
           <div class="pattern-ex-en">${ex.en} <button class="spk-btn" onclick="event.stopPropagation();lesson96SpeakPointEx(${lesson.n},${pointIdx},${i})">🔊</button></div>
           <div class="pattern-ex-ko">${ex.ko}</div>
         </div>`).join('')}
+      ${(p.check || []).length ? `
+        <div style="margin-top:14px;">
+          <div style="font-size:12px;font-weight:700;color:var(--success);margin-bottom:8px;">✅ 바로 확인해보기</div>
+          ${p.check.map(c => `
+            <div class="pattern-item" onclick="event.stopPropagation();lesson96TogglePractice(this)">
+              <div style="font-weight:600;color:var(--ink);">${c.ko}</div>
+              <div class="lesson96-answer" style="display:none;margin-top:8px;color:var(--accent-strong);font-weight:700;">${c.en}</div>
+            </div>`).join('')}
+        </div>` : ''}
     </div>`;
 }
 
