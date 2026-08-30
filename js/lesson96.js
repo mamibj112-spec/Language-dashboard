@@ -76,12 +76,13 @@ ${LESSON96_JSON_SPEC}`;
 }
 
 async function lesson96GenerateStudy(n) {
-  const btn = document.getElementById('lesson96-study-btn-' + n);
+  const btn = document.getElementById('lesson96-study-btn-' + n) || document.getElementById('lesson96-regen-btn-' + n);
   const errEl = document.getElementById('lesson96-study-err-' + n);
   if (!geminiApiKey) { errEl.innerHTML = `<div style="margin-top:8px;color:var(--warning);font-size:12px;">${NO_KEY_MSG}</div>`; return; }
 
+  const originalText = btn.textContent;
   btn.disabled = true;
-  btn.textContent = '⏳ 학습자료 만드는 중...';
+  btn.textContent = '⏳ 만드는 중...';
   errEl.innerHTML = '';
 
   const lesson = LESSON96[n - 1];
@@ -97,7 +98,7 @@ async function lesson96GenerateStudy(n) {
   } catch (err) {
     errEl.innerHTML = `<div style="margin-top:8px;color:var(--danger);font-size:12px;">❌ ${err.message}</div>`;
     btn.disabled = false;
-    btn.textContent = '📖 이 강의 내용 학습하기';
+    btn.textContent = originalText;
   }
 }
 
@@ -217,9 +218,13 @@ function lesson96StudySection(lesson) {
 
   return `
     <div style="margin-top:12px;" onclick="event.stopPropagation();">
-      <div class="step-label">${idx + 1} / ${steps.length}단계 · ${step.emoji} ${step.label}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+        <div class="step-label" style="margin-bottom:0;">${idx + 1} / ${steps.length}단계 · ${step.emoji} ${step.label}</div>
+        <button id="lesson96-regen-btn-${lesson.n}" onclick="lesson96GenerateStudy(${lesson.n})" style="font-size:11px;font-weight:700;color:var(--muted);background:none;border:none;cursor:pointer;padding:4px 0;">🔄 다시 만들기</button>
+      </div>
       <div class="step-track">${dots}</div>
       ${lesson96RenderStepCard(lesson, content, step)}
+      <div id="lesson96-study-err-${lesson.n}"></div>
       <div class="step-nav">
         <button class="step-nav-btn" ${idx === 0 ? 'disabled' : ''} onclick="lesson96GoStep(-1)">← 이전</button>
         <button class="step-nav-btn primary" ${idx === steps.length - 1 ? 'disabled' : ''} onclick="lesson96GoStep(1)">다음 →</button>
