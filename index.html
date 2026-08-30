@@ -11,7 +11,7 @@
 <script src="opic-role-data.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -174,7 +174,7 @@
       </div>
       <div id="review-list"></div>
     </div>
-    <button class="complete-btn" id="review-clear-btn" onclick="clearReviewLog()" style="background:rgba(22,33,27,0.07);">🗑️ 전체 삭제</button>
+    <button class="complete-btn" id="review-clear-btn" onclick="clearReviewLog()" style="background:var(--surface-alt);">🗑️ 전체 삭제</button>
   </div>
 
   <!-- ── 회사 대시보드 Tab ── -->
@@ -194,8 +194,8 @@
       </div>
       <div id="ppt-note-list" style="margin-bottom:12px;"></div>
       <div style="display:flex;gap:8px;margin-bottom:8px;">
-        <input type="text" id="ppt-title-input" placeholder="PPT 제목 (선택 사항)" style="flex:1;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(22,33,27,0.14);background:rgba(22,33,27,0.05);color:var(--ink);font-size:16px;">
-        <input type="number" id="ppt-slide-count" placeholder="슬라이드 수" min="3" max="15" style="width:100px;box-sizing:border-box;padding:12px 10px;border-radius:12px;border:1px solid rgba(22,33,27,0.14);background:rgba(22,33,27,0.05);color:var(--ink);font-size:16px;text-align:center;">
+        <input type="text" id="ppt-title-input" placeholder="PPT 제목 (선택 사항)" style="flex:1;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface-alt);color:var(--ink);font-size:16px;">
+        <input type="number" id="ppt-slide-count" placeholder="슬라이드 수" min="3" max="15" style="width:100px;box-sizing:border-box;padding:12px 10px;border-radius:12px;border:1px solid var(--line);background:var(--surface-alt);color:var(--ink);font-size:16px;text-align:center;">
       </div>
       <button class="complete-btn" id="ppt-generate-btn" onclick="generatePptFromNotes()">✨ PPT 초안 생성</button>
       <div id="ppt-result"></div>
@@ -232,7 +232,7 @@
           <div class="card-sub">배운 내용, 사진을 저장하고 키워드로 검색해요</div>
         </div>
       </div>
-      <input type="text" id="notes-search" placeholder="🔍 제목·내용·태그로 검색" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(22,33,27,0.14);background:rgba(22,33,27,0.05);color:var(--ink);font-size:16px;margin-bottom:10px;" oninput="renderNotesList()">
+      <input type="text" id="notes-search" placeholder="🔍 제목·내용·태그로 검색" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface-alt);color:var(--ink);font-size:16px;margin-bottom:10px;" oninput="renderNotesList()">
       <div id="notes-tag-filter" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
       <button class="complete-btn" onclick="openNoteForm()">➕ 새 기록 추가</button>
     </div>
@@ -259,7 +259,7 @@
     </div>
     <div id="ask-chat-messages" style="display:flex;flex-direction:column;gap:10px;margin-top:10px;"></div>
     <div style="display:flex;gap:8px;margin-top:10px;">
-      <input type="text" id="ask-chat-input" placeholder="예: VLOOKUP 어떻게 쓰는지 정리한 거 있어?" style="flex:1;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid rgba(22,33,27,0.14);background:rgba(22,33,27,0.05);color:var(--ink);font-size:16px;" onkeydown="if(event.key==='Enter')sendAskChat()">
+      <input type="text" id="ask-chat-input" placeholder="예: VLOOKUP 어떻게 쓰는지 정리한 거 있어?" style="flex:1;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface-alt);color:var(--ink);font-size:16px;" onkeydown="if(event.key==='Enter')sendAskChat()">
       <button class="complete-btn" onclick="sendAskChat()" style="flex:none;width:auto;padding:0 18px;">전송</button>
     </div>
     <button class="tab-btn" onclick="resetAskChat()" style="margin-top:8px;">🔄 대화 초기화</button>

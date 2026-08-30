@@ -435,7 +435,7 @@ function renderOpicMemorize() {
       <div style="color:var(--ink-soft);font-size:15px;margin-bottom:4px;">${item.q_en}</div>
       <div style="color:var(--muted);font-size:15px;margin-bottom:14px;">${item.q_ko}</div>
       ${item.en_script ? `
-        <div style="padding:12px;border-radius:12px;background:rgba(22,33,27,0.05);border:1px solid rgba(22,33,27,0.08);margin-bottom:10px;">
+        <div style="padding:12px;border-radius:12px;background:var(--surface-alt);border:1px solid var(--line-soft);margin-bottom:10px;">
           <div style="font-size:14px;color:var(--accent-strong);font-weight:600;margin-bottom:8px;">🇰🇷 한국어 스크립트 (이걸 보고 영어로 떠올려보세요)</div>
           <div style="font-size:16px;line-height:1.7;" class="script-text">${formatScriptHtml(item.ko_script)}</div>
         </div>
@@ -444,10 +444,10 @@ function renderOpicMemorize() {
             <div style="font-size:14px;color:var(--success);font-weight:600;margin-bottom:8px;">🇺🇸 정답 스크립트 <button class="spk-btn" onclick="speak('${item.en_script.replace(/&lt;[^&]*&gt;|<[^>]*>/g,'').replace(/'/g,"\\'")}')">🔊</button></div>
             <div style="font-size:16px;line-height:1.8;" class="script-text">${formatScriptHtml(item.en_script)}</div>
           </div>
-          <button class="complete-btn" onclick="opicMemRevealed=false;renderOpicMemorize()" style="margin-top:10px;background:rgba(22,33,27,0.07);">🙈 다시 가리기</button>
+          <button class="complete-btn" onclick="opicMemRevealed=false;renderOpicMemorize()" style="margin-top:10px;background:var(--surface-alt);">🙈 다시 가리기</button>
           <button class="complete-btn ${item.done ? 'done' : ''}" onclick="toggleOpicMemDone()" style="margin-top:10px;${item.done ? '' : 'background:var(--accent-strong);'}">${item.done ? '✅ 외웠어요 (취소하려면 클릭)' : '☑️ 외웠어요 체크'}</button>
           <div id="opic-study-points" style="margin-top:10px;">${renderOpicStudyPoints(item)}</div>
-          <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(22,33,27,0.07);">
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft);">
             <div style="font-size:14px;color:var(--muted);font-weight:600;margin-bottom:8px;">🎤 내 답변 말해보기 (모범답안 보지 말고 말해보세요)</div>
             <button class="mic-btn${opicSpeakingActive ? ' recording' : ''}" id="opic-mic-btn" onclick="toggleOpicSpeaking()" style="width:100%;">${opicSpeakingActive ? '🔴 녹음 중지' : '🎤 눌러서 말하기'}</button>
             <div id="opic-speaking-transcript" style="margin-top:8px;font-size:15px;color:var(--ink-soft);min-height:20px;">${opicSpeakingTranscript}</div>
@@ -485,7 +485,7 @@ function renderOpicStudyPoints(item) {
   if (item.studyPoints) {
     const sp = item.studyPoints;
     const section = (emoji, title, color, lines) => !lines || !lines.length ? '' : `
-      <div style="padding:12px;border-radius:12px;background:rgba(22,33,27,0.04);border:1px solid rgba(22,33,27,0.08);margin-bottom:8px;">
+      <div style="padding:12px;border-radius:12px;background:var(--surface-alt);border:1px solid var(--line-soft);margin-bottom:8px;">
         <div style="font-size:14px;color:${color};font-weight:600;margin-bottom:8px;">${emoji} ${title}</div>
         <ul style="margin:0;padding-left:18px;font-size:15px;line-height:1.8;color:var(--ink-soft);">
           ${lines.map(l => `<li>${l}</li>`).join('')}
@@ -618,7 +618,7 @@ async function loadOpicQuestions(stage, label, emoji) {
         <div style="font-size:14px;color:var(--muted);margin-bottom:4px;">${emoji} ${label} · 질문 ${i + 1}</div>
         <div style="font-weight:700;font-size:17px;margin-bottom:4px;">${it.question_en} <button class="spk-btn" onclick="speak('${(it.question_en || '').replace(/'/g, "\\'")}')">🔊</button></div>
         <div style="color:var(--muted);font-size:15px;margin-bottom:12px;">${it.question_ko}</div>
-        <div style="padding:12px;border-radius:12px;background:rgba(22,33,27,0.05);border:1px solid rgba(22,33,27,0.08);">
+        <div style="padding:12px;border-radius:12px;background:var(--surface-alt);border:1px solid var(--line-soft);">
           <div style="font-size:14px;color:var(--accent-strong);font-weight:600;margin-bottom:6px;">📝 모범답안 <button class="spk-btn" onclick="speak('${(it.answer_en || '').replace(/'/g, "\\'")}')">🔊</button></div>
           <div style="font-size:16px;line-height:1.7;margin-bottom:8px;" class="script-text">${formatScriptHtml(it.answer_en)}</div>
           <div style="color:var(--muted);font-size:15px;line-height:1.6;" class="script-text">${formatScriptHtml(it.answer_ko)}</div>

@@ -1,28 +1,28 @@
 :root {
-  --paper: #F4F6F3;
-  --surface: #FFFFFF;
-  --surface-alt: #EEF2EF;
-  --ink: #16211B;
-  --ink-soft: #3A473F;
-  --muted: #708077;
-  --line: #DDE3DD;
-  --line-soft: #E7ECE7;
-  --accent: #0F766E;
-  --accent-strong: #0B5C56;
-  --accent-soft: #14B8A6;
-  --accent-wash: rgba(15,118,110,0.08);
-  --accent-wash-strong: rgba(15,118,110,0.14);
-  --success: #15803D;
-  --success-wash: rgba(21,128,61,0.1);
-  --danger: #B91C1C;
-  --danger-wash: rgba(185,28,28,0.08);
-  --warning: #B45309;
-  --warning-wash: rgba(180,83,9,0.1);
-  --highlight-ink: #92400E;
-  --highlight-wash: rgba(180,83,9,0.08);
-  --highlight-line: rgba(180,83,9,0.22);
-  --font-display: 'Gowun Batang', Georgia, serif;
-  --font-body: 'Gowun Dodum', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  --paper: #1C1023;
+  --surface: #2B1830;
+  --surface-alt: #241528;
+  --ink: #FDF4F5;
+  --ink-soft: #E8D5E3;
+  --muted: #B79AB0;
+  --line: rgba(255,255,255,0.12);
+  --line-soft: rgba(255,255,255,0.08);
+  --accent: #F59E0B;
+  --accent-strong: #D97706;
+  --accent-soft: #FBBF24;
+  --accent-wash: rgba(245,158,11,0.14);
+  --accent-wash-strong: rgba(245,158,11,0.22);
+  --success: #34D399;
+  --success-wash: rgba(52,211,153,0.14);
+  --danger: #FB7185;
+  --danger-wash: rgba(251,113,133,0.14);
+  --warning: #FBBF24;
+  --warning-wash: rgba(251,191,36,0.14);
+  --highlight-ink: #FDE68A;
+  --highlight-wash: rgba(253,230,138,0.12);
+  --highlight-line: rgba(253,230,138,0.28);
+  --font-display: 'Jua', sans-serif;
+  --font-body: 'IBM Plex Sans KR', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -76,7 +76,7 @@ body {
   background: var(--surface);
   border-radius: 14px; padding: 16px; margin-bottom: 10px;
   border: 1px solid var(--line);
-  box-shadow: 0 1px 2px rgba(22,33,27,0.03);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
 }
 .card-header {
   display: flex; align-items: center; gap: 10px;
@@ -373,7 +373,7 @@ body {
 }
 .settings-btn:hover { background: var(--surface-alt); color: var(--ink); }
 .settings-overlay {
-  position: fixed; inset: 0; background: rgba(22,33,27,0.45);
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
   z-index: 100; display: flex; align-items: flex-end; justify-content: center;
 }
 .settings-panel {

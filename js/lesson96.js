@@ -262,7 +262,7 @@ function renderLesson96() {
         <span>진도</span>
         <span>${lesson96Completed} / ${LESSON96.length}</span>
       </div>
-      <div style="height:8px;border-radius:999px;background:rgba(22,33,27,0.07);overflow:hidden;">
+      <div style="height:8px;border-radius:999px;background:var(--surface-alt);overflow:hidden;">
         <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--accent),var(--accent-strong));transition:width .3s;"></div>
       </div>
     </div>`;
@@ -275,7 +275,7 @@ function renderLesson96() {
       ? 'background:rgba(21,128,61,0.15);color:var(--success);border-color:rgba(21,128,61,0.3);'
       : status === 'current'
         ? 'background:rgba(11,92,86,0.15);color:var(--accent-strong);border-color:rgba(11,92,86,0.3);'
-        : 'background:rgba(22,33,27,0.04);color:var(--muted);border-color:rgba(22,33,27,0.07);';
+        : 'background:var(--surface-alt);color:var(--muted);border-color:var(--line-soft);';
 
     return `
       <div id="lesson96-row-${lesson.n}" class="pattern-item${isOpen ? ' open' : ''}"

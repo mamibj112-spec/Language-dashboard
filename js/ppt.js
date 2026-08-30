@@ -17,7 +17,7 @@ function renderPptNoteList() {
       ${notesCache.map(n => {
         const date = new Date(n.createdAt);
         const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
-        return `<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(22,33,27,0.05);cursor:pointer;">
+        return `<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--surface-alt);cursor:pointer;">
           <input type="checkbox" checked onchange="pptToggleNote('${n.id}', this.checked)" style="width:16px;height:16px;accent-color:var(--accent);">
           <div style="flex:1;min-width:0;">
             <div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n.title || '(제목 없음)'}</div>
@@ -73,7 +73,7 @@ ${titleInput ? `PPT 제목: ${titleInput}` : ''}
     pptLastTopic = titleInput || selected[0].title || 'PPT';
 
     resultEl.innerHTML = slides.map((s, i) => `
-      <div style="margin-top:10px;padding:14px;border-radius:12px;background:rgba(22,33,27,0.05);border:1px solid rgba(22,33,27,0.08);">
+      <div style="margin-top:10px;padding:14px;border-radius:12px;background:var(--surface-alt);border:1px solid var(--line-soft);">
         <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">슬라이드 ${i + 1}</div>
         <div style="font-weight:700;font-size:17px;margin-bottom:8px;">${s.title}</div>
         <ul style="margin:0;padding-left:18px;color:var(--ink-soft);font-size:15px;line-height:1.7;">
