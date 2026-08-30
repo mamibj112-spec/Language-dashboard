@@ -41,11 +41,16 @@ function lesson96Complete(n) {
 }
 
 const LESSON96_JSON_SPEC = `{
-  "summary": "이 주제의 핵심 개념을 초중급 학습자 눈높이로 쉽게 설명 (5~7문장, 원어민이 실제로 느끼는 뉘앙스와 왜 이 표현이 중요한지 위주로 충분히 풀어서)",
-  "points": [{"point": "핵심 문법/표현 포인트 이름", "explain": "구체적인 설명 (2~3문장, 예시 포함)"}] (4~6개),
-  "examples": [{"en": "실생활 회화체 예문", "ko": "한국어 번역"}] (10개, 쉬운 것부터 응용까지 난이도 순으로),
-  "dialogue": {"situation": "이 대화가 벌어지는 상황 한 줄 설명", "lines": [{"speaker": "A 또는 B", "en": "영어 대사", "ko": "한국어 번역"}]} (오늘 배운 패턴/표현이 자연스럽게 여러 번 등장하는 대화문 6~8줄),
-  "practice": [{"ko": "영작 연습용 한국어 문장", "en": "영어 정답"}] (8개, 앞서 나온 예문보다 조금씩 응용된 문장으로)
+  "summary": "이 강의 전체를 한눈에 보여주는 짧은 도입 설명 (2~3문장) - 오늘 순서대로 배울 핵심 포인트들을 왜 배우는지 맥락을 잡아주세요",
+  "points": [
+    {
+      "point": "핵심 문법/표현 포인트 이름 (강의에서 실제로 다루는 순서대로)",
+      "explain": "이 포인트가 무엇이고 원어민이 실제로 어떤 뉘앙스로 쓰는지 구체적으로 설명 (3~4문장)",
+      "examples": [{"en": "이 포인트 하나만 활용한 실생활 회화체 예문", "ko": "한국어 번역"}] (이 포인트에 대한 예문 3개)
+    }
+  ] (4~6개, 이 순서 그대로 학습자가 하나씩 익혀나갈 겁니다),
+  "dialogue": {"situation": "이 대화가 벌어지는 상황 한 줄 설명", "lines": [{"speaker": "A 또는 B", "en": "영어 대사", "ko": "한국어 번역"}]} (위에서 배운 포인트들을 모두 종합해서 자연스럽게 활용하는 대화문 6~8줄),
+  "practice": [{"ko": "영작 연습용 한국어 문장", "en": "영어 정답"}] (8개, 위 포인트들을 골고루 섞어서 최종 복습하는 문제)
 }`;
 
 function lesson96StudyPrompt(title) {
@@ -102,11 +107,6 @@ async function lesson96GenerateStudy(n) {
   }
 }
 
-function lesson96SpeakEx(n, i) {
-  const c = lesson96Study[n];
-  if (c && c.examples[i]) speak(c.examples[i].en);
-}
-
 function lesson96TogglePractice(el) {
   const a = el.querySelector('.lesson96-answer');
   if (a) a.style.display = a.style.display === 'none' ? 'block' : 'none';
@@ -117,11 +117,15 @@ function lesson96SpeakDialogue(n, i) {
   if (c && c.dialogue && c.dialogue.lines[i]) speak(c.dialogue.lines[i].en);
 }
 
+function lesson96SpeakPointEx(n, pointIdx, exIdx) {
+  const c = lesson96Study[n];
+  const ex = c && c.points[pointIdx] && c.points[pointIdx].examples && c.points[pointIdx].examples[exIdx];
+  if (ex) speak(ex.en);
+}
+
 function lesson96StepDefs(content) {
-  const steps = [
-    { key: 'concept', emoji: '📐', label: '핵심 개념' },
-    { key: 'examples', emoji: '🗣️', label: '예문' },
-  ];
+  const steps = [{ key: 'intro', emoji: '📋', label: '오늘 배울 내용' }];
+  content.points.forEach((p, i) => steps.push({ key: 'point', pointIdx: i, emoji: '📐', label: p.point }));
   if (content.dialogue) steps.push({ key: 'dialogue', emoji: '💬', label: '미니 대화문' });
   steps.push({ key: 'practice', emoji: '✍️', label: '영작 연습' });
   return steps;
@@ -132,31 +136,36 @@ function lesson96GoStep(delta) {
   renderLesson96();
 }
 
-function lesson96ConceptCard(content) {
+function lesson96IntroCard(content) {
+  return `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-emoji">📋</span>
+        <div>
+          <div class="card-title">오늘 배울 내용</div>
+          <div class="card-sub">${content.fromDescription ? '✅ 실제 강의 설명 기반으로 정리했어요' : '⚠️ 강의 정보를 찾지 못해 제목만 보고 추측해서 만들었어요'}</div>
+        </div>
+      </div>
+      <div style="font-size:13px;line-height:1.7;color:var(--ink-soft);margin-bottom:12px;">${content.summary}</div>
+      ${content.points.map((p, i) => `<div style="display:flex;gap:8px;margin-bottom:8px;"><span style="color:var(--accent);font-weight:700;flex-shrink:0;">${i + 1}.</span><span style="color:var(--ink);font-weight:600;">${p.point}</span></div>`).join('')}
+    </div>`;
+}
+
+function lesson96PointCard(lesson, content, pointIdx) {
+  const p = content.points[pointIdx];
   return `
     <div class="card">
       <div class="card-header">
         <span class="card-emoji">📐</span>
         <div>
-          <div class="card-title">핵심 개념</div>
-          <div class="card-sub">${content.fromDescription ? '✅ 실제 강의 설명 기반으로 정리했어요' : '⚠️ 강의 정보를 찾지 못해 제목만 보고 추측해서 만들었어요'}</div>
+          <div class="card-title">${pointIdx + 1}. ${p.point}</div>
+          <div class="card-sub">🔊 예문을 듣고 따라 말해보세요</div>
         </div>
       </div>
-      <div style="font-size:13px;line-height:1.7;color:var(--ink-soft);margin-bottom:10px;">${content.summary}</div>
-      ${content.points.map(p => `<div style="margin-bottom:6px;"><b style="color:var(--accent);">${p.point}</b> — <span style="color:var(--ink-soft);">${p.explain}</span></div>`).join('')}
-    </div>`;
-}
-
-function lesson96ExamplesCard(lesson, content) {
-  return `
-    <div class="card">
-      <div class="card-header">
-        <span class="card-emoji">🗣️</span>
-        <div><div class="card-title">예문</div><div class="card-sub">🔊 듣고 따라 말해보세요</div></div>
-      </div>
-      ${content.examples.map((ex, i) => `
+      <div style="font-size:13px;line-height:1.7;color:var(--ink-soft);margin-bottom:12px;">${p.explain}</div>
+      ${(p.examples || []).map((ex, i) => `
         <div class="pattern-ex">
-          <div class="pattern-ex-en">${ex.en} <button class="spk-btn" onclick="event.stopPropagation();lesson96SpeakEx(${lesson.n},${i})">🔊</button></div>
+          <div class="pattern-ex-en">${ex.en} <button class="spk-btn" onclick="event.stopPropagation();lesson96SpeakPointEx(${lesson.n},${pointIdx},${i})">🔊</button></div>
           <div class="pattern-ex-ko">${ex.ko}</div>
         </div>`).join('')}
     </div>`;
@@ -195,8 +204,8 @@ function lesson96PracticeCard(content) {
 }
 
 function lesson96RenderStepCard(lesson, content, step) {
-  if (step.key === 'concept') return lesson96ConceptCard(content);
-  if (step.key === 'examples') return lesson96ExamplesCard(lesson, content);
+  if (step.key === 'intro') return lesson96IntroCard(content);
+  if (step.key === 'point') return lesson96PointCard(lesson, content, step.pointIdx);
   if (step.key === 'dialogue') return lesson96DialogueCard(lesson, content);
   return lesson96PracticeCard(content);
 }
