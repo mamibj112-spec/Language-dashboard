@@ -7,21 +7,21 @@ let pptLastTopic = 'PPT';
 function renderPptNoteList() {
   const el = document.getElementById('ppt-note-list');
   if (!notesCache.length) {
-    el.innerHTML = `<div style="color:#fbbf24;font-size:15px;margin-bottom:8px;">⚠️ 아직 저장된 기록이 없어요. 먼저 기록 탭에서 기록을 추가해주세요.</div>`;
+    el.innerHTML = `<div style="color:var(--warning);font-size:15px;margin-bottom:8px;">⚠️ 아직 저장된 기록이 없어요. 먼저 기록 탭에서 기록을 추가해주세요.</div>`;
     return;
   }
   pptSelectedIds = new Set(notesCache.map(n => n.id));
   el.innerHTML = `
-    <div style="font-size:15px;color:#94a3b8;margin-bottom:8px;">PPT에 포함할 기록을 선택하세요 (기본: 전체 선택)</div>
+    <div style="font-size:15px;color:var(--muted);margin-bottom:8px;">PPT에 포함할 기록을 선택하세요 (기본: 전체 선택)</div>
     <div style="display:flex;flex-direction:column;gap:6px;">
       ${notesCache.map(n => {
         const date = new Date(n.createdAt);
         const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
-        return `<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,0.06);cursor:pointer;">
-          <input type="checkbox" checked onchange="pptToggleNote('${n.id}', this.checked)" style="width:16px;height:16px;accent-color:#0ea5e9;">
+        return `<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(22,33,27,0.05);cursor:pointer;">
+          <input type="checkbox" checked onchange="pptToggleNote('${n.id}', this.checked)" style="width:16px;height:16px;accent-color:var(--accent);">
           <div style="flex:1;min-width:0;">
             <div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n.title || '(제목 없음)'}</div>
-            <div style="font-size:13px;color:#94a3b8;">${dateStr}${(n.tags||[]).length ? ' · ' + n.tags.map(t=>'#'+t).join(' ') : ''}</div>
+            <div style="font-size:13px;color:var(--muted);">${dateStr}${(n.tags||[]).length ? ' · ' + n.tags.map(t=>'#'+t).join(' ') : ''}</div>
           </div>
         </label>`;
       }).join('')}
@@ -35,10 +35,10 @@ function pptToggleNote(id, checked) {
 async function generatePptFromNotes() {
   const resultEl = document.getElementById('ppt-result');
   const btn = document.getElementById('ppt-generate-btn');
-  if (!geminiApiKey) { resultEl.innerHTML = `<div style="margin-top:12px;color:#fbbf24;">⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요.</div>`; return; }
+  if (!geminiApiKey) { resultEl.innerHTML = `<div style="margin-top:12px;color:var(--warning);">⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요.</div>`; return; }
 
   const selected = notesCache.filter(n => pptSelectedIds.has(n.id));
-  if (!selected.length) { resultEl.innerHTML = `<div style="margin-top:12px;color:#fbbf24;">⚠️ 기록을 하나 이상 선택해주세요.</div>`; return; }
+  if (!selected.length) { resultEl.innerHTML = `<div style="margin-top:12px;color:var(--warning);">⚠️ 기록을 하나 이상 선택해주세요.</div>`; return; }
 
   const titleInput = document.getElementById('ppt-title-input').value.trim();
   let count = parseInt(document.getElementById('ppt-slide-count').value, 10);
@@ -73,16 +73,16 @@ ${titleInput ? `PPT 제목: ${titleInput}` : ''}
     pptLastTopic = titleInput || selected[0].title || 'PPT';
 
     resultEl.innerHTML = slides.map((s, i) => `
-      <div style="margin-top:10px;padding:14px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">
-        <div style="font-size:13px;color:#94a3b8;margin-bottom:4px;">슬라이드 ${i + 1}</div>
+      <div style="margin-top:10px;padding:14px;border-radius:12px;background:rgba(22,33,27,0.05);border:1px solid rgba(22,33,27,0.08);">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">슬라이드 ${i + 1}</div>
         <div style="font-weight:700;font-size:17px;margin-bottom:8px;">${s.title}</div>
-        <ul style="margin:0;padding-left:18px;color:#e2e8f0;font-size:15px;line-height:1.7;">
+        <ul style="margin:0;padding-left:18px;color:var(--ink-soft);font-size:15px;line-height:1.7;">
           ${(s.bullets || []).map(b => `<li>${b}</li>`).join('')}
         </ul>
       </div>`).join('')
-      + `<button class="complete-btn" onclick="downloadPptx()" style="margin-top:14px;background:linear-gradient(135deg,#22c55e,#0ea5e9);">⬇️ PPT 파일(.pptx) 다운로드</button>`;
+      + `<button class="complete-btn" onclick="downloadPptx()" style="margin-top:14px;background:var(--accent-strong);">⬇️ PPT 파일(.pptx) 다운로드</button>`;
   } catch (err) {
-    resultEl.innerHTML = `<div style="margin-top:12px;color:#f87171;">❌ ${err.message}</div>`;
+    resultEl.innerHTML = `<div style="margin-top:12px;color:var(--danger);">❌ ${err.message}</div>`;
   }
   btn.disabled = false; btn.textContent = '✨ PPT 초안 생성';
 }

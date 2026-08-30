@@ -3,6 +3,7 @@
 let lesson96Completed = parseInt(localStorage.getItem('lesson96_completed') || '0', 10);
 let lesson96Open = null;
 let lesson96Study = JSON.parse(localStorage.getItem('lesson96_study') || '{}');
+let lesson96StepIdx = 0;
 
 function lesson96Status(n) {
   if (n <= lesson96Completed) return 'done';
@@ -12,7 +13,9 @@ function lesson96Status(n) {
 
 function lesson96Toggle(n) {
   if (lesson96Status(n) === 'locked') return;
-  lesson96Open = lesson96Open === n ? null : n;
+  const opening = lesson96Open !== n;
+  lesson96Open = opening ? n : null;
+  if (opening) lesson96StepIdx = 0;
   renderLesson96();
   if (lesson96Open === n) {
     setTimeout(() => {
@@ -27,6 +30,7 @@ function lesson96Complete(n) {
   lesson96Completed = n;
   localStorage.setItem('lesson96_completed', String(lesson96Completed));
   lesson96Open = lesson96Completed < 96 ? lesson96Completed + 1 : null;
+  lesson96StepIdx = 0;
   renderLesson96();
   if (lesson96Open) {
     setTimeout(() => {
@@ -74,7 +78,7 @@ ${LESSON96_JSON_SPEC}`;
 async function lesson96GenerateStudy(n) {
   const btn = document.getElementById('lesson96-study-btn-' + n);
   const errEl = document.getElementById('lesson96-study-err-' + n);
-  if (!geminiApiKey) { errEl.innerHTML = `<div style="margin-top:8px;color:#fbbf24;font-size:12px;">${NO_KEY_MSG}</div>`; return; }
+  if (!geminiApiKey) { errEl.innerHTML = `<div style="margin-top:8px;color:var(--warning);font-size:12px;">${NO_KEY_MSG}</div>`; return; }
 
   btn.disabled = true;
   btn.textContent = '⏳ 학습자료 만드는 중...';
@@ -88,9 +92,10 @@ async function lesson96GenerateStudy(n) {
     content.fromDescription = !!lesson.desc;
     lesson96Study[n] = content;
     localStorage.setItem('lesson96_study', JSON.stringify(lesson96Study));
+    lesson96StepIdx = 0;
     renderLesson96();
   } catch (err) {
-    errEl.innerHTML = `<div style="margin-top:8px;color:#f87171;font-size:12px;">❌ ${err.message}</div>`;
+    errEl.innerHTML = `<div style="margin-top:8px;color:var(--danger);font-size:12px;">❌ ${err.message}</div>`;
     btn.disabled = false;
     btn.textContent = '📖 이 강의 내용 학습하기';
   }
@@ -111,64 +116,113 @@ function lesson96SpeakDialogue(n, i) {
   if (c && c.dialogue && c.dialogue.lines[i]) speak(c.dialogue.lines[i].en);
 }
 
+function lesson96StepDefs(content) {
+  const steps = [
+    { key: 'concept', emoji: '📐', label: '핵심 개념' },
+    { key: 'examples', emoji: '🗣️', label: '예문' },
+  ];
+  if (content.dialogue) steps.push({ key: 'dialogue', emoji: '💬', label: '미니 대화문' });
+  steps.push({ key: 'practice', emoji: '✍️', label: '영작 연습' });
+  return steps;
+}
+
+function lesson96GoStep(delta) {
+  lesson96StepIdx += delta;
+  renderLesson96();
+}
+
+function lesson96ConceptCard(content) {
+  return `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-emoji">📐</span>
+        <div>
+          <div class="card-title">핵심 개념</div>
+          <div class="card-sub">${content.fromDescription ? '✅ 실제 강의 설명 기반으로 정리했어요' : '⚠️ 강의 정보를 찾지 못해 제목만 보고 추측해서 만들었어요'}</div>
+        </div>
+      </div>
+      <div style="font-size:13px;line-height:1.7;color:var(--ink-soft);margin-bottom:10px;">${content.summary}</div>
+      ${content.points.map(p => `<div style="margin-bottom:6px;"><b style="color:var(--accent);">${p.point}</b> — <span style="color:var(--ink-soft);">${p.explain}</span></div>`).join('')}
+    </div>`;
+}
+
+function lesson96ExamplesCard(lesson, content) {
+  return `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-emoji">🗣️</span>
+        <div><div class="card-title">예문</div><div class="card-sub">🔊 듣고 따라 말해보세요</div></div>
+      </div>
+      ${content.examples.map((ex, i) => `
+        <div class="pattern-ex">
+          <div class="pattern-ex-en">${ex.en} <button class="spk-btn" onclick="event.stopPropagation();lesson96SpeakEx(${lesson.n},${i})">🔊</button></div>
+          <div class="pattern-ex-ko">${ex.ko}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function lesson96DialogueCard(lesson, content) {
+  return `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-emoji">💬</span>
+        <div><div class="card-title">미니 대화문</div><div class="card-sub">${content.dialogue.situation || '오늘 배운 표현이 들어간 대화'}</div></div>
+      </div>
+      ${content.dialogue.lines.map((l, i) => `
+        <div class="dl-wrap${l.speaker === 'B' ? ' me' : ''}">
+          <div class="dl-bubble${l.speaker === 'B' ? ' me' : ''}">
+            <div class="dl-en">${l.en} <button class="spk-btn" onclick="event.stopPropagation();lesson96SpeakDialogue(${lesson.n},${i})">🔊</button></div>
+            <div class="dl-ko">${l.ko}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function lesson96PracticeCard(content) {
+  return `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-emoji">✍️</span>
+        <div><div class="card-title">영작 연습</div><div class="card-sub">탭하면 정답이 나와요</div></div>
+      </div>
+      ${content.practice.map(p => `
+        <div class="pattern-item" onclick="event.stopPropagation();lesson96TogglePractice(this)">
+          <div style="font-weight:600;color:var(--ink);">${p.ko}</div>
+          <div class="lesson96-answer" style="display:none;margin-top:8px;color:var(--accent-strong);font-weight:700;">${p.en}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function lesson96RenderStepCard(lesson, content, step) {
+  if (step.key === 'concept') return lesson96ConceptCard(content);
+  if (step.key === 'examples') return lesson96ExamplesCard(lesson, content);
+  if (step.key === 'dialogue') return lesson96DialogueCard(lesson, content);
+  return lesson96PracticeCard(content);
+}
+
 function lesson96StudySection(lesson) {
   const content = lesson96Study[lesson.n];
   if (!content) {
     return `
       <div style="margin-top:10px;">
-        <button class="complete-btn" id="lesson96-study-btn-${lesson.n}" style="background:linear-gradient(135deg,#0ea5e9,#6366f1);" onclick="event.stopPropagation();lesson96GenerateStudy(${lesson.n})">📖 이 강의 내용 학습하기</button>
+        <button class="complete-btn" id="lesson96-study-btn-${lesson.n}" style="background:var(--accent-strong);" onclick="event.stopPropagation();lesson96GenerateStudy(${lesson.n})">📖 이 강의 내용 학습하기</button>
         <div id="lesson96-study-err-${lesson.n}"></div>
       </div>`;
   }
 
+  const steps = lesson96StepDefs(content);
+  const idx = Math.max(0, Math.min(lesson96StepIdx, steps.length - 1));
+  const step = steps[idx];
+  const dots = steps.map((s, i) => `<div class="step-dot${i < idx ? ' done' : i === idx ? ' on' : ''}"></div>`).join('');
+
   return `
     <div style="margin-top:12px;" onclick="event.stopPropagation();">
-      <div class="card" style="margin-bottom:8px;">
-        <div class="card-header">
-          <span class="card-emoji">📐</span>
-          <div>
-            <div class="card-title">핵심 개념</div>
-            <div class="card-sub">${content.fromDescription ? '✅ 실제 강의 설명 기반으로 정리했어요' : '⚠️ 강의 정보를 찾지 못해 제목만 보고 추측해서 만들었어요'}</div>
-          </div>
-        </div>
-        <div style="font-size:13px;line-height:1.7;color:#e2e8f0;margin-bottom:10px;">${content.summary}</div>
-        ${content.points.map(p => `<div style="margin-bottom:6px;"><b style="color:#a78bfa;">${p.point}</b> — <span style="color:#cbd5e1;">${p.explain}</span></div>`).join('')}
-      </div>
-      <div class="card" style="margin-bottom:8px;">
-        <div class="card-header">
-          <span class="card-emoji">🗣️</span>
-          <div><div class="card-title">예문</div><div class="card-sub">🔊 듣고 따라 말해보세요</div></div>
-        </div>
-        ${content.examples.map((ex, i) => `
-          <div class="pattern-ex">
-            <div class="pattern-ex-en">${ex.en} <button class="spk-btn" onclick="event.stopPropagation();lesson96SpeakEx(${lesson.n},${i})">🔊</button></div>
-            <div class="pattern-ex-ko">${ex.ko}</div>
-          </div>`).join('')}
-      </div>
-      ${content.dialogue ? `
-      <div class="card" style="margin-bottom:8px;">
-        <div class="card-header">
-          <span class="card-emoji">💬</span>
-          <div><div class="card-title">미니 대화문</div><div class="card-sub">${content.dialogue.situation || '오늘 배운 표현이 들어간 대화'}</div></div>
-        </div>
-        ${content.dialogue.lines.map((l, i) => `
-          <div class="dl-wrap${l.speaker === 'B' ? ' me' : ''}">
-            <div class="dl-bubble${l.speaker === 'B' ? ' me' : ''}">
-              <div class="dl-en">${l.en} <button class="spk-btn" onclick="event.stopPropagation();lesson96SpeakDialogue(${lesson.n},${i})">🔊</button></div>
-              <div class="dl-ko">${l.ko}</div>
-            </div>
-          </div>`).join('')}
-      </div>` : ''}
-      <div class="card">
-        <div class="card-header">
-          <span class="card-emoji">✍️</span>
-          <div><div class="card-title">영작 연습</div><div class="card-sub">탭하면 정답이 나와요</div></div>
-        </div>
-        ${content.practice.map(p => `
-          <div class="pattern-item" onclick="event.stopPropagation();lesson96TogglePractice(this)">
-            <div style="font-weight:600;color:#f1f5f9;">${p.ko}</div>
-            <div class="lesson96-answer" style="display:none;margin-top:8px;color:#38bdf8;font-weight:700;">${p.en}</div>
-          </div>`).join('')}
+      <div class="step-label">${idx + 1} / ${steps.length}단계 · ${step.emoji} ${step.label}</div>
+      <div class="step-track">${dots}</div>
+      ${lesson96RenderStepCard(lesson, content, step)}
+      <div class="step-nav">
+        <button class="step-nav-btn" ${idx === 0 ? 'disabled' : ''} onclick="lesson96GoStep(-1)">← 이전</button>
+        <button class="step-nav-btn primary" ${idx === steps.length - 1 ? 'disabled' : ''} onclick="lesson96GoStep(1)">다음 →</button>
       </div>
     </div>`;
 }
@@ -181,10 +235,10 @@ function lesson96Embed(lesson, status) {
           style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
       </div>
-      <a href="https://www.youtube.com/watch?v=${lesson.id}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:13px;color:#38bdf8;text-decoration:none;">유튜브에서 보기 ↗</a>
+      <a href="https://www.youtube.com/watch?v=${lesson.id}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;font-size:13px;color:var(--accent-strong);text-decoration:none;">유튜브에서 보기 ↗</a>
       ${status === 'current'
         ? `<button class="complete-btn" style="margin-top:10px;" onclick="event.stopPropagation();lesson96Complete(${lesson.n})">✅ 이 강의 완료하고 다음 강의 열기</button>`
-        : `<div style="margin-top:8px;font-size:13px;color:#4ade80;">✅ 완료한 강의예요 · 복습 중</div>`}
+        : `<div style="margin-top:8px;font-size:13px;color:var(--success);">✅ 완료한 강의예요 · 복습 중</div>`}
     </div>
     ${lesson96StudySection(lesson)}`;
 }
@@ -204,12 +258,12 @@ function renderLesson96() {
           <div class="card-sub">라이브 아카데미 토들러 · 1강부터 순서대로 진행해요</div>
         </div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:13px;color:#94a3b8;margin-bottom:6px;">
+      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px;">
         <span>진도</span>
         <span>${lesson96Completed} / ${LESSON96.length}</span>
       </div>
-      <div style="height:8px;border-radius:999px;background:rgba(255,255,255,0.08);overflow:hidden;">
-        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#a78bfa,#38bdf8);transition:width .3s;"></div>
+      <div style="height:8px;border-radius:999px;background:rgba(22,33,27,0.07);overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--accent),var(--accent-strong));transition:width .3s;"></div>
       </div>
     </div>`;
 
@@ -218,10 +272,10 @@ function renderLesson96() {
     const isOpen = lesson96Open === lesson.n;
     const icon = status === 'done' ? '✅' : status === 'current' ? '▶️' : '🔒';
     const tagStyle = status === 'done'
-      ? 'background:rgba(74,222,128,0.15);color:#4ade80;border-color:rgba(74,222,128,0.3);'
+      ? 'background:rgba(21,128,61,0.15);color:var(--success);border-color:rgba(21,128,61,0.3);'
       : status === 'current'
-        ? 'background:rgba(56,189,248,0.15);color:#38bdf8;border-color:rgba(56,189,248,0.3);'
-        : 'background:rgba(255,255,255,0.05);color:#64748b;border-color:rgba(255,255,255,0.08);';
+        ? 'background:rgba(11,92,86,0.15);color:var(--accent-strong);border-color:rgba(11,92,86,0.3);'
+        : 'background:rgba(22,33,27,0.04);color:var(--muted);border-color:rgba(22,33,27,0.07);';
 
     return `
       <div id="lesson96-row-${lesson.n}" class="pattern-item${isOpen ? ' open' : ''}"
@@ -230,7 +284,7 @@ function renderLesson96() {
         <div class="pattern-top">
           <div style="display:flex;align-items:center;gap:8px;min-width:0;">
             <span class="pattern-tag" style="${tagStyle}flex-shrink:0;">${icon} ${lesson.n}강</span>
-            <span style="font-size:14px;font-weight:600;color:#f1f5f9;overflow:hidden;text-overflow:ellipsis;white-space:${isOpen ? 'normal' : 'nowrap'};">${lesson.title}</span>
+            <span style="font-size:14px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:${isOpen ? 'normal' : 'nowrap'};">${lesson.title}</span>
           </div>
         </div>
         ${isOpen ? lesson96Embed(lesson, status) : ''}

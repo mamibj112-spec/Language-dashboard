@@ -129,18 +129,18 @@ function renderOpicTopics() {
 
   const contentEl = document.getElementById('opic-stage-content');
   if (opicStage === 'survey') {
-    contentEl.innerHTML = `<div style="font-size:15px;color:#94a3b8;margin-bottom:8px;">실제 시험처럼, 설문에서 고를 법한 관심사 주제를 선택하세요</div>
+    contentEl.innerHTML = `<div style="font-size:15px;color:var(--muted);margin-bottom:8px;">실제 시험처럼, 설문에서 고를 법한 관심사 주제를 선택하세요</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;">
         ${OPIC_SURVEY_TOPICS.map((t, i) => `<button class="tab-btn" onclick="loadOpicQuestions('survey','${t.label}','${t.emoji}')" style="flex:none;">${t.emoji} ${t.label}</button>`).join('')}
       </div>`;
   } else if (opicStage === 'intro') {
-    contentEl.innerHTML = `<div style="font-size:15px;color:#94a3b8;margin-bottom:8px;">시험 시작 시 항상 나오는 자기소개 단계예요 (1문항)</div>
+    contentEl.innerHTML = `<div style="font-size:15px;color:var(--muted);margin-bottom:8px;">시험 시작 시 항상 나오는 자기소개 단계예요 (1문항)</div>
       <button class="complete-btn" onclick="loadOpicQuestions('intro','자기소개','🙋')">▶ 자기소개 질문 받기</button>`;
   } else if (opicStage === 'role') {
-    contentEl.innerHTML = `<div style="font-size:15px;color:#94a3b8;margin-bottom:8px;">정보요청 → 대안제시 → 관련 과거경험으로 이어지는 롤플레이 세트예요 (3문항)</div>
+    contentEl.innerHTML = `<div style="font-size:15px;color:var(--muted);margin-bottom:8px;">정보요청 → 대안제시 → 관련 과거경험으로 이어지는 롤플레이 세트예요 (3문항)</div>
       <button class="complete-btn" onclick="loadOpicQuestions('role','롤플레이','🎭')">▶ 롤플레이 세트 받기</button>`;
   } else if (opicStage === 'twist') {
-    contentEl.innerHTML = `<div style="font-size:15px;color:#94a3b8;margin-bottom:8px;">고난도 돌발 단계예요 — 비교/묘사/루틴 + 관련 이슈·뉴스·의견 (2문항)</div>
+    contentEl.innerHTML = `<div style="font-size:15px;color:var(--muted);margin-bottom:8px;">고난도 돌발 단계예요 — 비교/묘사/루틴 + 관련 이슈·뉴스·의견 (2문항)</div>
       <button class="complete-btn" onclick="loadOpicQuestions('twist','돌발질문','⚡')">▶ 돌발질문 받기</button>`;
   } else if (opicStage === 'memorize') {
     renderOpicMemorize();
@@ -152,7 +152,7 @@ function renderOpicTopics() {
 // ── 만능 답변 ──
 function renderOpicAllPurpose() {
   const contentEl = document.getElementById('opic-stage-content');
-  contentEl.innerHTML = `<div style="font-size:15px;color:#94a3b8;margin-bottom:10px;">어떤 문제가 나와도 이 표현들로 답변을 이어갈 수 있어요. 통째로 외워두면 실전에서 든든해요.</div>` +
+  contentEl.innerHTML = `<div style="font-size:15px;color:var(--muted);margin-bottom:10px;">어떤 문제가 나와도 이 표현들로 답변을 이어갈 수 있어요. 통째로 외워두면 실전에서 든든해요.</div>` +
     OPIC_ALLPURPOSE.map((cat, ci) => `
       <div class="card" style="margin-bottom:10px;">
         <div style="font-weight:700;font-size:16px;margin-bottom:10px;">${cat.category}</div>
@@ -341,7 +341,7 @@ async function toggleOpicSpeakingNative() {
 async function compareOpicSpeaking(modelScript) {
   const resultEl = document.getElementById('opic-compare-result');
   const btn = document.getElementById('opic-compare-btn');
-  if (!geminiApiKey) { resultEl.innerHTML = `<div style="margin-top:10px;color:#fbbf24;">⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요.</div>`; return; }
+  if (!geminiApiKey) { resultEl.innerHTML = `<div style="margin-top:10px;color:var(--warning);">⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요.</div>`; return; }
 
   btn.disabled = true;
   btn.textContent = '⏳ 분석 중...';
@@ -363,7 +363,7 @@ ${opicSpeakingTranscript}
     const feedback = await geminiText(prompt, 'You are an encouraging OPIc speaking coach. Reply in Korean only.');
     resultEl.innerHTML = `<div class="feedback-card" style="margin-top:10px;">${feedback}</div>`;
   } catch (err) {
-    resultEl.innerHTML = `<div style="margin-top:10px;color:#f87171;">❌ ${err.message}</div>`;
+    resultEl.innerHTML = `<div style="margin-top:10px;color:var(--danger);">❌ ${err.message}</div>`;
   }
   btn.disabled = false;
   btn.textContent = '✨ AI로 비교 분석';
@@ -379,7 +379,7 @@ function renderOpicMemorize() {
   }
 
   if (opicMemCategory === null) {
-    contentEl.innerHTML = `<div style="font-size:15px;color:#94a3b8;margin-bottom:8px;">내 스크립트 자료로 암기 연습해요. 분류를 고르세요</div>
+    contentEl.innerHTML = `<div style="font-size:15px;color:var(--muted);margin-bottom:8px;">내 스크립트 자료로 암기 연습해요. 분류를 고르세요</div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         ${OPIC_MEM_CATEGORIES.map(c => `<button class="tab-btn" onclick="opicMemCategory='${c.id}';opicMemTopicIdx=null;opicMemItemIdx=null;renderOpicMemorize()" style="text-align:left;">${c.label}</button>`).join('')}
       </div>`;
@@ -388,7 +388,7 @@ function renderOpicMemorize() {
 
   const data = getOpicMemData();
   if (!data) {
-    contentEl.innerHTML = `<div style="color:#f87171;">⚠️ 스크립트 데이터를 불러오지 못했어요.</div>`;
+    contentEl.innerHTML = `<div style="color:var(--danger);">⚠️ 스크립트 데이터를 불러오지 못했어요.</div>`;
     return;
   }
 
@@ -430,29 +430,29 @@ function renderOpicMemorize() {
   contentEl.innerHTML = `
     <button class="tab-btn" onclick="opicMemItemIdx=null;renderOpicMemorize()" style="margin-bottom:10px;">← ${topic.topic} 목록</button>
     <div class="card">
-      <div style="font-size:14px;color:#94a3b8;margin-bottom:4px;">${topic.topic} · ${opicMemItemIdx + 1}/${topic.items.length}</div>
+      <div style="font-size:14px;color:var(--muted);margin-bottom:4px;">${topic.topic} · ${opicMemItemIdx + 1}/${topic.items.length}</div>
       <div style="font-weight:700;font-size:17px;margin-bottom:8px;">${item.title}</div>
-      <div style="color:#e2e8f0;font-size:15px;margin-bottom:4px;">${item.q_en}</div>
-      <div style="color:#94a3b8;font-size:15px;margin-bottom:14px;">${item.q_ko}</div>
+      <div style="color:var(--ink-soft);font-size:15px;margin-bottom:4px;">${item.q_en}</div>
+      <div style="color:var(--muted);font-size:15px;margin-bottom:14px;">${item.q_ko}</div>
       ${item.en_script ? `
-        <div style="padding:12px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);margin-bottom:10px;">
-          <div style="font-size:14px;color:#0ea5e9;font-weight:600;margin-bottom:8px;">🇰🇷 한국어 스크립트 (이걸 보고 영어로 떠올려보세요)</div>
+        <div style="padding:12px;border-radius:12px;background:rgba(22,33,27,0.05);border:1px solid rgba(22,33,27,0.08);margin-bottom:10px;">
+          <div style="font-size:14px;color:var(--accent-strong);font-weight:600;margin-bottom:8px;">🇰🇷 한국어 스크립트 (이걸 보고 영어로 떠올려보세요)</div>
           <div style="font-size:16px;line-height:1.7;" class="script-text">${formatScriptHtml(item.ko_script)}</div>
         </div>
         ${opicMemRevealed ? `
-          <div style="padding:12px;border-radius:12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);">
-            <div style="font-size:14px;color:#4ade80;font-weight:600;margin-bottom:8px;">🇺🇸 정답 스크립트 <button class="spk-btn" onclick="speak('${item.en_script.replace(/&lt;[^&]*&gt;|<[^>]*>/g,'').replace(/'/g,"\\'")}')">🔊</button></div>
+          <div style="padding:12px;border-radius:12px;background:rgba(21,128,61,0.08);border:1px solid rgba(21,128,61,0.25);">
+            <div style="font-size:14px;color:var(--success);font-weight:600;margin-bottom:8px;">🇺🇸 정답 스크립트 <button class="spk-btn" onclick="speak('${item.en_script.replace(/&lt;[^&]*&gt;|<[^>]*>/g,'').replace(/'/g,"\\'")}')">🔊</button></div>
             <div style="font-size:16px;line-height:1.8;" class="script-text">${formatScriptHtml(item.en_script)}</div>
           </div>
-          <button class="complete-btn" onclick="opicMemRevealed=false;renderOpicMemorize()" style="margin-top:10px;background:rgba(255,255,255,0.08);">🙈 다시 가리기</button>
-          <button class="complete-btn ${item.done ? 'done' : ''}" onclick="toggleOpicMemDone()" style="margin-top:10px;${item.done ? '' : 'background:linear-gradient(135deg,#22c55e,#0ea5e9);'}">${item.done ? '✅ 외웠어요 (취소하려면 클릭)' : '☑️ 외웠어요 체크'}</button>
+          <button class="complete-btn" onclick="opicMemRevealed=false;renderOpicMemorize()" style="margin-top:10px;background:rgba(22,33,27,0.07);">🙈 다시 가리기</button>
+          <button class="complete-btn ${item.done ? 'done' : ''}" onclick="toggleOpicMemDone()" style="margin-top:10px;${item.done ? '' : 'background:var(--accent-strong);'}">${item.done ? '✅ 외웠어요 (취소하려면 클릭)' : '☑️ 외웠어요 체크'}</button>
           <div id="opic-study-points" style="margin-top:10px;">${renderOpicStudyPoints(item)}</div>
-          <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
-            <div style="font-size:14px;color:#94a3b8;font-weight:600;margin-bottom:8px;">🎤 내 답변 말해보기 (모범답안 보지 말고 말해보세요)</div>
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(22,33,27,0.07);">
+            <div style="font-size:14px;color:var(--muted);font-weight:600;margin-bottom:8px;">🎤 내 답변 말해보기 (모범답안 보지 말고 말해보세요)</div>
             <button class="mic-btn${opicSpeakingActive ? ' recording' : ''}" id="opic-mic-btn" onclick="toggleOpicSpeaking()" style="width:100%;">${opicSpeakingActive ? '🔴 녹음 중지' : '🎤 눌러서 말하기'}</button>
-            <div id="opic-speaking-transcript" style="margin-top:8px;font-size:15px;color:#e2e8f0;min-height:20px;">${opicSpeakingTranscript}</div>
+            <div id="opic-speaking-transcript" style="margin-top:8px;font-size:15px;color:var(--ink-soft);min-height:20px;">${opicSpeakingTranscript}</div>
             ${opicSpeakingTranscript && !opicSpeakingActive ? `
-              <button class="complete-btn" id="opic-compare-btn" onclick='compareOpicSpeaking(${JSON.stringify(item.en_script.replace(/&lt;[^&]*&gt;|<[^>]*>/g,''))})' style="margin-top:8px;background:linear-gradient(135deg,#a78bfa,#38bdf8);">✨ AI로 비교 분석</button>
+              <button class="complete-btn" id="opic-compare-btn" onclick='compareOpicSpeaking(${JSON.stringify(item.en_script.replace(/&lt;[^&]*&gt;|<[^>]*>/g,''))})' style="margin-top:8px;background:var(--accent);">✨ AI로 비교 분석</button>
               <div id="opic-compare-result"></div>
             ` : ''}
           </div>
@@ -460,7 +460,7 @@ function renderOpicMemorize() {
           <button class="complete-btn" onclick="opicMemRevealed=true;renderOpicMemorize()">👀 영어 스크립트 보기</button>
         `}
       ` : `
-        <div style="color:#fbbf24;font-size:15px;margin-bottom:10px;">이 질문은 원본 자료에 모범 스크립트가 없어요.</div>
+        <div style="color:var(--warning);font-size:15px;margin-bottom:10px;">이 질문은 원본 자료에 모범 스크립트가 없어요.</div>
         <button class="complete-btn" id="opic-gen-script-btn" onclick="generateOpicScript(${opicMemTopicIdx},${opicMemItemIdx})">✨ AI로 모범답안 만들기</button>
         <div id="opic-gen-script-result"></div>
       `}
@@ -485,19 +485,19 @@ function renderOpicStudyPoints(item) {
   if (item.studyPoints) {
     const sp = item.studyPoints;
     const section = (emoji, title, color, lines) => !lines || !lines.length ? '' : `
-      <div style="padding:12px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);margin-bottom:8px;">
+      <div style="padding:12px;border-radius:12px;background:rgba(22,33,27,0.04);border:1px solid rgba(22,33,27,0.08);margin-bottom:8px;">
         <div style="font-size:14px;color:${color};font-weight:600;margin-bottom:8px;">${emoji} ${title}</div>
-        <ul style="margin:0;padding-left:18px;font-size:15px;line-height:1.8;color:#e2e8f0;">
+        <ul style="margin:0;padding-left:18px;font-size:15px;line-height:1.8;color:var(--ink-soft);">
           ${lines.map(l => `<li>${l}</li>`).join('')}
         </ul>
       </div>`;
     return `
-      ${section('💬', '핵심 표현·숙어', '#fbbf24', (sp.expressions || []).map(e => `<b>${e.phrase}</b> — ${e.meaning}`))}
-      ${section('📐', '문법 포인트', '#a78bfa', (sp.grammar || []).map(g => `<b>${g.point}</b> — ${g.desc}`))}
-      ${section('🧰', '만능 답변 (다른 문제에도 활용 가능)', '#38bdf8', sp.allPurpose || [])}
+      ${section('💬', '핵심 표현·숙어', 'var(--warning)', (sp.expressions || []).map(e => `<b>${e.phrase}</b> — ${e.meaning}`))}
+      ${section('📐', '문법 포인트', 'var(--accent)', (sp.grammar || []).map(g => `<b>${g.point}</b> — ${g.desc}`))}
+      ${section('🧰', '만능 답변 (다른 문제에도 활용 가능)', 'var(--accent-strong)', sp.allPurpose || [])}
     `;
   }
-  return `<button class="complete-btn" id="opic-study-btn" onclick="loadOpicStudyPoints(${opicMemTopicIdx},${opicMemItemIdx})" style="background:linear-gradient(135deg,#a78bfa,#38bdf8);">📌 핵심 표현·문법·만능 답변 정리 보기</button>
+  return `<button class="complete-btn" id="opic-study-btn" onclick="loadOpicStudyPoints(${opicMemTopicIdx},${opicMemItemIdx})" style="background:var(--accent);">📌 핵심 표현·문법·만능 답변 정리 보기</button>
     <div id="opic-study-result"></div>`;
 }
 
@@ -506,7 +506,7 @@ async function loadOpicStudyPoints(topicIdx, itemIdx) {
   const item = topic.items[itemIdx];
   const resultEl = document.getElementById('opic-study-result');
   const btn = document.getElementById('opic-study-btn');
-  if (!geminiApiKey) { resultEl.innerHTML = `<div style="margin-top:10px;color:#fbbf24;">⚙️ API 키가 없어요!</div>`; return; }
+  if (!geminiApiKey) { resultEl.innerHTML = `<div style="margin-top:10px;color:var(--warning);">⚙️ API 키가 없어요!</div>`; return; }
 
   btn.disabled = true;
   btn.textContent = '⏳ 정리하는 중...';
@@ -532,7 +532,7 @@ async function loadOpicStudyPoints(topicIdx, itemIdx) {
     saveOpicMemPatch(opicMemCategory, topicIdx, itemIdx, { studyPoints: item.studyPoints });
     renderOpicMemorize();
   } catch (err) {
-    resultEl.innerHTML = `<div style="margin-top:10px;color:#f87171;">❌ ${err.message}</div>`;
+    resultEl.innerHTML = `<div style="margin-top:10px;color:var(--danger);">❌ ${err.message}</div>`;
     btn.disabled = false;
     btn.textContent = '📌 핵심 표현·문법·만능 답변 정리 보기';
   }
@@ -543,7 +543,7 @@ async function generateOpicScript(topicIdx, itemIdx) {
   const item = topic.items[itemIdx];
   const resultEl = document.getElementById('opic-gen-script-result');
   const btn = document.getElementById('opic-gen-script-btn');
-  if (!geminiApiKey) { resultEl.innerHTML = `<div style="margin-top:10px;color:#fbbf24;">⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요.</div>`; return; }
+  if (!geminiApiKey) { resultEl.innerHTML = `<div style="margin-top:10px;color:var(--warning);">⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요.</div>`; return; }
 
   btn.disabled = true;
   btn.textContent = '⏳ 생성 중...';
@@ -570,7 +570,7 @@ async function generateOpicScript(topicIdx, itemIdx) {
     saveOpicMemPatch(opicMemCategory, topicIdx, itemIdx, { en_script: item.en_script, ko_script: item.ko_script });
     renderOpicMemorize();
   } catch (err) {
-    resultEl.innerHTML = `<div style="margin-top:10px;color:#f87171;">❌ ${err.message}</div>`;
+    resultEl.innerHTML = `<div style="margin-top:10px;color:var(--danger);">❌ ${err.message}</div>`;
     btn.disabled = false;
     btn.textContent = '✨ AI로 모범답안 만들기';
   }
@@ -596,9 +596,9 @@ const OPIC_STAGE_PROMPTS = {
 
 async function loadOpicQuestions(stage, label, emoji) {
   const resultEl = document.getElementById('opic-result');
-  if (!geminiApiKey) { resultEl.innerHTML = `<div style="margin-top:12px;color:#fbbf24;">⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요.</div>`; return; }
+  if (!geminiApiKey) { resultEl.innerHTML = `<div style="margin-top:12px;color:var(--warning);">⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요.</div>`; return; }
 
-  resultEl.innerHTML = `<div style="margin-top:12px;color:#94a3b8;">⏳ "${label}" 질문을 불러오는 중...</div>`;
+  resultEl.innerHTML = `<div style="margin-top:12px;color:var(--muted);">⏳ "${label}" 질문을 불러오는 중...</div>`;
 
   const basePrompt = OPIC_STAGE_PROMPTS[stage](label);
   const prompt = `${basePrompt}
@@ -615,16 +615,16 @@ async function loadOpicQuestions(stage, label, emoji) {
 
     resultEl.innerHTML = items.map((it, i) => `
       <div class="card" style="margin-top:12px;">
-        <div style="font-size:14px;color:#94a3b8;margin-bottom:4px;">${emoji} ${label} · 질문 ${i + 1}</div>
+        <div style="font-size:14px;color:var(--muted);margin-bottom:4px;">${emoji} ${label} · 질문 ${i + 1}</div>
         <div style="font-weight:700;font-size:17px;margin-bottom:4px;">${it.question_en} <button class="spk-btn" onclick="speak('${(it.question_en || '').replace(/'/g, "\\'")}')">🔊</button></div>
-        <div style="color:#94a3b8;font-size:15px;margin-bottom:12px;">${it.question_ko}</div>
-        <div style="padding:12px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">
-          <div style="font-size:14px;color:#0ea5e9;font-weight:600;margin-bottom:6px;">📝 모범답안 <button class="spk-btn" onclick="speak('${(it.answer_en || '').replace(/'/g, "\\'")}')">🔊</button></div>
+        <div style="color:var(--muted);font-size:15px;margin-bottom:12px;">${it.question_ko}</div>
+        <div style="padding:12px;border-radius:12px;background:rgba(22,33,27,0.05);border:1px solid rgba(22,33,27,0.08);">
+          <div style="font-size:14px;color:var(--accent-strong);font-weight:600;margin-bottom:6px;">📝 모범답안 <button class="spk-btn" onclick="speak('${(it.answer_en || '').replace(/'/g, "\\'")}')">🔊</button></div>
           <div style="font-size:16px;line-height:1.7;margin-bottom:8px;" class="script-text">${formatScriptHtml(it.answer_en)}</div>
-          <div style="color:#94a3b8;font-size:15px;line-height:1.6;" class="script-text">${formatScriptHtml(it.answer_ko)}</div>
+          <div style="color:var(--muted);font-size:15px;line-height:1.6;" class="script-text">${formatScriptHtml(it.answer_ko)}</div>
         </div>
       </div>`).join('');
   } catch (err) {
-    resultEl.innerHTML = `<div style="margin-top:12px;color:#f87171;">❌ ${err.message}</div>`;
+    resultEl.innerHTML = `<div style="margin-top:12px;color:var(--danger);">❌ ${err.message}</div>`;
   }
 }

@@ -64,11 +64,11 @@ function renderVocab() {
       if (detail) {
         exHtml += renderVocabDetailHtml(detail);
       } else if (vocabDetailError[key]) {
-        exHtml += `<div style="font-size:14px;color:#f87171;">❌ ${vocabDetailError[key]}</div>`;
+        exHtml += `<div style="font-size:14px;color:var(--danger);">❌ ${vocabDetailError[key]}</div>`;
       } else if (!geminiApiKey) {
-        exHtml += `<div style="font-size:14px;color:#fbbf24;">⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요.</div>`;
+        exHtml += `<div style="font-size:14px;color:var(--warning);">⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요.</div>`;
       } else {
-        exHtml += `<div style="font-size:14px;color:#94a3b8;">⏳ 파생어·구동사 불러오는 중...</div>`;
+        exHtml += `<div style="font-size:14px;color:var(--muted);">⏳ 파생어·구동사 불러오는 중...</div>`;
         if (!vocabDetailLoading[key]) {
           vocabDetailLoading[key] = true;
           loadVocabDetail(i);
@@ -94,19 +94,19 @@ function renderVocab() {
 
 function renderVocabDetailHtml(detail) {
   const forms = (detail.forms || []).map(f => `
-    <div style="display:inline-block;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.3);border-radius:20px;padding:4px 10px;margin:0 6px 6px 0;font-size:14px;">
-      <b style="color:#a78bfa;">${f.form}</b> <span style="color:#94a3b8;">(${f.pos})</span> — ${f.ko}
+    <div style="display:inline-block;background:rgba(15,118,110,0.12);border:1px solid rgba(15,118,110,0.3);border-radius:20px;padding:4px 10px;margin:0 6px 6px 0;font-size:14px;">
+      <b style="color:var(--accent);">${f.form}</b> <span style="color:var(--muted);">(${f.pos})</span> — ${f.ko}
     </div>`).join('');
   const phrasal = (detail.phrasalVerbs || []).map(p => `
-    <div style="padding:10px 12px;border-radius:10px;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);margin-bottom:6px;">
-      <div style="font-weight:700;font-size:15px;color:#38bdf8;">${p.phrase} <button class="spk-btn" onclick="event.stopPropagation();speak('${(p.phrase||'').replace(/'/g,"\\'")}')">🔊</button></div>
-      <div style="font-size:14px;color:#94a3b8;margin-bottom:4px;">${p.ko}</div>
-      ${p.example ? `<div style="font-size:14px;color:#e2e8f0;">"${p.example}"</div><div style="font-size:13px;color:#94a3b8;">${p.exampleKo || ''}</div>` : ''}
+    <div style="padding:10px 12px;border-radius:10px;background:rgba(11,92,86,0.08);border:1px solid rgba(11,92,86,0.2);margin-bottom:6px;">
+      <div style="font-weight:700;font-size:15px;color:var(--accent-strong);">${p.phrase} <button class="spk-btn" onclick="event.stopPropagation();speak('${(p.phrase||'').replace(/'/g,"\\'")}')">🔊</button></div>
+      <div style="font-size:14px;color:var(--muted);margin-bottom:4px;">${p.ko}</div>
+      ${p.example ? `<div style="font-size:14px;color:var(--ink-soft);">"${p.example}"</div><div style="font-size:13px;color:var(--muted);">${p.exampleKo || ''}</div>` : ''}
     </div>`).join('');
   return `
-    ${forms ? `<div style="font-size:13px;color:#94a3b8;font-weight:600;margin-bottom:6px;">🔤 파생어</div><div style="margin-bottom:10px;">${forms}</div>` : ''}
-    ${phrasal ? `<div style="font-size:13px;color:#94a3b8;font-weight:600;margin-bottom:6px;">🔗 관련 구동사</div>${phrasal}` : ''}
-    ${!forms && !phrasal ? `<div style="font-size:14px;color:#94a3b8;">파생어·구동사를 찾지 못했어요.</div>` : ''}
+    ${forms ? `<div style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:6px;">🔤 파생어</div><div style="margin-bottom:10px;">${forms}</div>` : ''}
+    ${phrasal ? `<div style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:6px;">🔗 관련 구동사</div>${phrasal}` : ''}
+    ${!forms && !phrasal ? `<div style="font-size:14px;color:var(--muted);">파생어·구동사를 찾지 못했어요.</div>` : ''}
   `;
 }
 
@@ -208,12 +208,12 @@ function renderHints() {
         document.getElementById('chat-input').value = p.en;
         chipState[i] = 'en';
         span.textContent = p.en;
-        span.style.color = '#e0f2fe';
+        span.style.color = 'var(--ink)';
       } else {
         chipState[i] = 'ko';
         span.textContent = p.ko;
-        span.style.color = '#fde68a';
-        setTimeout(() => { chipState[i] = 'en'; span.textContent = p.en; span.style.color = '#e0f2fe'; }, 2000);
+        span.style.color = 'var(--highlight-ink)';
+        setTimeout(() => { chipState[i] = 'en'; span.textContent = p.en; span.style.color = 'var(--ink)'; }, 2000);
       }
     };
     el.appendChild(span);
@@ -286,7 +286,7 @@ function renderPatterns() {
           </div>
         `).join('') +
         `</div>
-        <button class="complete-btn" style="margin-top:10px;font-size:15px;padding:10px;background:linear-gradient(135deg,#38bdf8,#6366f1)" onclick="event.stopPropagation();startPatternPractice(${i})">💬 이 패턴으로 대화 연습하기</button>`;
+        <button class="complete-btn" style="margin-top:10px;font-size:15px;padding:10px;background:var(--accent-strong)" onclick="event.stopPropagation();startPatternPractice(${i})">💬 이 패턴으로 대화 연습하기</button>`;
     }
     div.innerHTML = `
       <div class="pattern-top">
