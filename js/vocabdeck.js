@@ -36,7 +36,11 @@ const VOCABDECK_JSON_SPEC = `{
       "ipa": "국제음성기호(IPA) 발음기호, 슬래시 포함 (예: /meɪnˈteɪn/)",
       "pos": "품사 (동사/명사/형용사/부사 등, 한글로 짧게)",
       "ko": "가장 핵심적인 한국어 뜻 (짧게)",
-      "example": {"en": "이 단어가 실생활 대화에서 실제로 쓰이는 자연스러운 예문 (원어민이 쓸 법한 문장)", "ko": "예문의 한국어 번역"},
+      "example": {
+        "en": "이 단어가 실생활 대화에서 실제로 쓰이는 자연스러운 예문 (원어민이 쓸 법한 문장)",
+        "ko": "예문의 한국어 번역",
+        "glossary": [{"phrase": "예문 속에 나온, 메인 단어 말고 학습자가 모를 수 있는 다른 단어/숙어/구동사 원형", "ko": "그 뜻"}] (0~3개, 실제로 어려운 게 있을 때만 - 쉬운 예문이면 빈 배열)
+      },
       "note": "이 예문에서 학습자가 따로 공부해두면 좋은 포인트 - 문법 포인트, 헷갈리기 쉬운 부분, 원어민이 쓰는 뉘앙스, 함께 자주 쓰이는 전치사/표현 등 (2~3문장)"
     }
   ] (8개, 서로 다른 단어)
@@ -50,14 +54,14 @@ function vocabdeckPrompt(day, avoidWords) {
 아래 단어들은 이미 이전 DAY에서 다뤘으니 절대 중복해서 고르지 마세요:
 ${avoidWords.length ? avoidWords.join(', ') : '(아직 없음)'}
 
-각 단어마다 뜻만 딱 주지 말고, 그 단어가 실제 문장 속에서 어떻게 쓰이는지 보여주는 자연스러운 예문을 반드시 함께 만들어주세요. 그리고 그 예문을 통해 학습자가 무엇을 추가로 공부해두면 좋을지(문법, 뉘앙스, 자주 같이 쓰이는 표현 등)도 짚어주세요. 발음기호(IPA)도 정확하게 붙여주세요.
+각 단어마다 뜻만 딱 주지 말고, 그 단어가 실제 문장 속에서 어떻게 쓰이는지 보여주는 자연스러운 예문을 반드시 함께 만들어주세요. 예문 안에 메인 단어 말고도 학습자가 모를 수 있는 단어나 숙어, 구동사가 있으면 절대 그냥 넘어가지 말고 따로 뽑아서 뜻을 설명해주세요. 그리고 그 예문을 통해 학습자가 무엇을 추가로 공부해두면 좋을지(문법, 뉘앙스, 자주 같이 쓰이는 표현 등)도 짚어주세요. 발음기호(IPA)도 정확하게 붙여주세요.
 
 다음 JSON 형식으로만 답하세요 (다른 설명 없이 JSON만):
 ${VOCABDECK_JSON_SPEC}`;
 }
 
 async function vocabdeckGenerate(day) {
-  const btn = document.getElementById('vocabdeck-gen-btn-' + day);
+  const btn = document.getElementById('vocabdeck-gen-btn-' + day) || document.getElementById('vocabdeck-regen-btn-' + day);
   const errEl = document.getElementById('vocabdeck-err-' + day);
   if (!geminiApiKey) { errEl.innerHTML = `<div style="margin-top:8px;color:var(--warning);font-size:12px;">${NO_KEY_MSG}</div>`; return; }
 
@@ -143,6 +147,11 @@ function vocabdeckWordCard(day, content, wordIdx) {
         <div class="pattern-ex-en">${w.example.en} <button class="spk-btn" onclick="event.stopPropagation();vocabdeckSpeak(${day},${wordIdx})">🔊</button></div>
         <div class="pattern-ex-ko">${w.example.ko}</div>
       </div>
+      ${w.example.glossary && w.example.glossary.length ? `
+        <div style="margin-top:10px;background:var(--accent-wash);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:12px;font-weight:700;color:var(--accent-strong);margin-bottom:6px;">📚 예문 속 다른 단어·표현</div>
+          ${w.example.glossary.map(g => `<div style="display:flex;gap:6px;font-size:13px;margin-bottom:3px;"><span style="font-weight:700;color:var(--ink);">${g.phrase}</span><span style="color:var(--ink-soft);">– ${g.ko}</span></div>`).join('')}
+        </div>` : ''}
       ${w.note ? `
         <div style="margin-top:10px;background:var(--warning-wash);border-left:3px solid var(--warning);border-radius:0 8px 8px 0;padding:10px 12px;">
           <div style="font-size:12px;font-weight:700;color:var(--warning);margin-bottom:4px;">📝 이 예문에서 꼭 봐두세요</div>
@@ -192,9 +201,13 @@ function vocabdeckSection(day) {
 
   return `
     <div style="margin-top:12px;" onclick="event.stopPropagation();">
-      <div class="step-label">${idx + 1} / ${steps.length}단계 · ${step.emoji} ${step.label}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+        <div class="step-label" style="margin-bottom:0;">${idx + 1} / ${steps.length}단계 · ${step.emoji} ${step.label}</div>
+        <button id="vocabdeck-regen-btn-${day}" onclick="vocabdeckGenerate(${day})" style="font-size:11px;font-weight:700;color:var(--muted);background:none;border:none;cursor:pointer;padding:4px 0;">🔄 다시 만들기</button>
+      </div>
       <div class="step-track">${dots}</div>
       ${vocabdeckRenderStepCard(day, content, step)}
+      <div id="vocabdeck-err-${day}"></div>
       ${step.key !== 'done' ? `
         <div class="step-nav">
           <button class="step-nav-btn" ${idx === 0 ? 'disabled' : ''} onclick="vocabdeckGoStep(-1)">← 이전</button>
