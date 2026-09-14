@@ -427,6 +427,18 @@ body {
 .pattern-ex-ko { font-size: 14px; color: var(--muted); margin-top: 4px; }
 .pattern-hint { font-size: 13px; color: var(--muted); margin-top: 6px; }
 
+/* ── Multiple choice (복습 테스트) ── */
+.mc-option {
+  display: block; width: 100%; text-align: left; padding: 12px 14px; margin-bottom: 8px;
+  border-radius: 10px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--ink); font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+}
+.mc-option:hover { background: var(--accent-wash); border-color: var(--accent-soft); }
+.mc-option.correct { background: var(--success-wash); border-color: var(--success); color: var(--success); }
+.mc-option.wrong { background: var(--danger-wash); border-color: var(--danger); color: var(--danger); }
+.mc-option.disabled { cursor: default; }
+
 /* ── Step flow (단계별 학습) ── */
 .step-track { display: flex; gap: 5px; margin-bottom: 14px; }
 .step-dot { flex: 1; height: 5px; border-radius: 99px; background: var(--line); }

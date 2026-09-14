@@ -8,6 +8,8 @@ let vocabdeckDays = JSON.parse(localStorage.getItem('vocabdeck_days') || '{}');
 let vocabdeckUsedWords = JSON.parse(localStorage.getItem('vocabdeck_usedWords') || '[]');
 let vocabdeckOpen = null;
 let vocabdeckStepIdx = 0;
+let vocabdeckReviewOpen = null;
+let vocabdeckReviewQuiz = null;
 
 function vocabdeckStatus(day) {
   if (day <= vocabdeckCompleted) return 'done';
@@ -117,6 +119,86 @@ function vocabdeckComplete(day) {
   renderVocabDeck();
 }
 
+// ── 7일마다 복습 테스트 (강제 아님, 쌓인 단어를 뒤섞어 객관식으로 확인) ──
+function vocabdeckShuffled(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function vocabdeckReviewPool(throughDay) {
+  const pool = [];
+  for (let d = throughDay - 6; d <= throughDay; d++) {
+    const content = vocabdeckDays[d];
+    if (content) content.words.forEach(w => pool.push(w));
+  }
+  return pool;
+}
+
+function vocabdeckBlankOut(sentence, word) {
+  const idx = sentence.toLowerCase().indexOf(word.toLowerCase());
+  if (idx === -1) return null;
+  return sentence.slice(0, idx) + '_____' + sentence.slice(idx + word.length);
+}
+
+function vocabdeckBuildReviewQuiz(throughDay) {
+  const pool = vocabdeckReviewPool(throughDay);
+  const picked = vocabdeckShuffled(pool).slice(0, Math.min(12, pool.length));
+  const questions = picked.map(w => {
+    const others = pool.filter(o => o.word !== w.word);
+    const distractors = vocabdeckShuffled(others).slice(0, 3);
+    const blanked = w.example && vocabdeckBlankOut(w.example.en, w.word);
+    if (blanked && Math.random() < 0.5) {
+      return { type: 'blank', prompt: blanked, ko: w.example.ko, correct: w.word, options: vocabdeckShuffled([w.word, ...distractors.map(d => d.word)]) };
+    }
+    return { type: 'meaning', prompt: w.word, ipa: w.ipa, correct: w.ko, options: vocabdeckShuffled([w.ko, ...distractors.map(d => d.ko)]) };
+  });
+  return { throughDay, questions, idx: 0, answers: {} };
+}
+
+function vocabdeckToggleReview(throughDay) {
+  const opening = vocabdeckReviewOpen !== throughDay;
+  vocabdeckReviewOpen = opening ? throughDay : null;
+  if (opening) vocabdeckReviewQuiz = vocabdeckBuildReviewQuiz(throughDay);
+  renderVocabDeck();
+  if (opening) {
+    setTimeout(() => {
+      const row = document.getElementById('vocabdeck-review-row-' + throughDay);
+      if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
+  }
+}
+
+function vocabdeckRetryReview(throughDay) {
+  vocabdeckReviewQuiz = vocabdeckBuildReviewQuiz(throughDay);
+  renderVocabDeck();
+}
+
+function vocabdeckCloseReview() {
+  vocabdeckReviewOpen = null;
+  vocabdeckReviewQuiz = null;
+  renderVocabDeck();
+}
+
+function vocabdeckAnswerReview(optIdx) {
+  const quiz = vocabdeckReviewQuiz;
+  if (!quiz || quiz.answers[quiz.idx]) return;
+  const q = quiz.questions[quiz.idx];
+  const correctIdx = q.options.indexOf(q.correct);
+  quiz.answers[quiz.idx] = { selectedIdx: optIdx, correctIdx, correct: optIdx === correctIdx };
+  renderVocabDeck();
+}
+
+function vocabdeckReviewGoStep(delta) {
+  const quiz = vocabdeckReviewQuiz;
+  if (!quiz) return;
+  quiz.idx = Math.max(0, Math.min(quiz.questions.length, quiz.idx + delta));
+  renderVocabDeck();
+}
+
 function vocabdeckIntroCard(day, content) {
   return `
     <div class="card">
@@ -168,6 +250,79 @@ function vocabdeckDoneCard(day) {
         <div><div class="card-title">DAY ${day} 학습 끝!</div><div class="card-sub">오늘 배운 8개 단어를 다음에 한번 더 복습해보세요</div></div>
       </div>
       <button class="complete-btn" onclick="event.stopPropagation();vocabdeckComplete(${day})">✅ 오늘 학습 완료하고 다음 DAY 열기</button>
+    </div>`;
+}
+
+function vocabdeckReviewQuestionCard(quiz) {
+  const q = quiz.questions[quiz.idx];
+  const answer = quiz.answers[quiz.idx];
+  return `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-emoji">${q.type === 'blank' ? '✏️' : '🔤'}</span>
+        <div>
+          <div class="card-title">${q.type === 'blank' ? '빈칸에 들어갈 단어는?' : '이 단어의 뜻은?'}</div>
+          <div class="card-sub">${q.type === 'blank' ? q.ko : (q.ipa || '')}</div>
+        </div>
+      </div>
+      <div style="font-size:16px;font-weight:700;color:var(--ink);line-height:1.6;margin-bottom:14px;">${q.prompt}</div>
+      ${q.options.map((opt, i) => {
+        let cls = 'mc-option';
+        if (answer) {
+          if (i === answer.correctIdx) cls += ' correct';
+          else if (i === answer.selectedIdx) cls += ' wrong';
+          cls += ' disabled';
+        }
+        return `<button class="${cls}" onclick="event.stopPropagation();vocabdeckAnswerReview(${i})">${opt}</button>`;
+      }).join('')}
+    </div>`;
+}
+
+function vocabdeckReviewSection(throughDay) {
+  const quiz = vocabdeckReviewQuiz;
+  if (!quiz || quiz.throughDay !== throughDay) return '';
+  const total = quiz.questions.length;
+  if (!total) {
+    return `<div style="margin-top:10px;font-size:13px;color:var(--muted);" onclick="event.stopPropagation();">복습할 단어가 아직 부족해요.</div>`;
+  }
+  if (quiz.idx >= total) {
+    const score = Object.values(quiz.answers).filter(a => a.correct).length;
+    return `
+      <div style="margin-top:12px;" onclick="event.stopPropagation();">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-emoji">🎉</span>
+            <div><div class="card-title">복습 결과: ${score} / ${total}</div><div class="card-sub">DAY ${throughDay - 6}~${throughDay}에서 배운 단어 복습</div></div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="step-nav-btn" style="flex:1;" onclick="vocabdeckRetryReview(${throughDay})">🔄 다시 풀기</button>
+            <button class="step-nav-btn primary" style="flex:1;" onclick="vocabdeckCloseReview()">닫기</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  const dots = quiz.questions.map((q, i) => `<div class="step-dot${i < quiz.idx ? ' done' : i === quiz.idx ? ' on' : ''}"></div>`).join('');
+  return `
+    <div style="margin-top:12px;" onclick="event.stopPropagation();">
+      <div class="step-label">${quiz.idx + 1} / ${total}문제</div>
+      <div class="step-track">${dots}</div>
+      ${vocabdeckReviewQuestionCard(quiz)}
+      <div class="step-nav">
+        <button class="step-nav-btn" ${quiz.idx === 0 ? 'disabled' : ''} onclick="vocabdeckReviewGoStep(-1)">← 이전</button>
+        <button class="step-nav-btn primary" onclick="vocabdeckReviewGoStep(1)">다음 →</button>
+      </div>
+    </div>`;
+}
+
+function vocabdeckReviewRow(throughDay) {
+  const isOpen = vocabdeckReviewOpen === throughDay;
+  return `
+    <div id="vocabdeck-review-row-${throughDay}" class="pattern-item${isOpen ? ' open' : ''}" style="border-color:var(--accent-soft);" onclick="vocabdeckToggleReview(${throughDay})">
+      <div class="pattern-top">
+        <span class="pattern-tag" style="background:var(--accent-wash-strong);color:var(--accent-strong);">🧠 DAY ${throughDay - 6}~${throughDay} 복습 테스트</span>
+      </div>
+      ${isOpen ? vocabdeckReviewSection(throughDay) : ''}
     </div>`;
 }
 
@@ -251,6 +406,9 @@ function renderVocabDeck() {
         </div>
         ${isOpen ? vocabdeckSection(day) : ''}
       </div>`);
+    if (day % 7 === 0 && status === 'done') {
+      rows.push(vocabdeckReviewRow(day));
+    }
   }
 
   el.innerHTML = header + rows.join('');
