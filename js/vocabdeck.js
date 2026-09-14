@@ -1,5 +1,5 @@
-// -- 어휘 탭: 단어를 뜻만 외우지 않고 예문과 함께 익히고 직접 따라 써보는 학습법 --
-// (단어+실제 예문을 세트로 외우고, 예문을 손으로 따라 쓰듯 타이핑하며 체화 + 매일 학습 스트릭)
+// -- 어휘 탭: 단어를 뜻만 외우지 않고 예문과 함께 익히는 학습법 --
+// (단어+발음기호+실제 예문을 세트로 외우고, 그 예문에서 공부해둘 포인트까지 함께 + 매일 학습 스트릭)
 
 let vocabdeckCompleted = parseInt(localStorage.getItem('vocabdeck_completed') || '0', 10);
 let vocabdeckStreak = parseInt(localStorage.getItem('vocabdeck_streak') || '0', 10);
@@ -8,7 +8,6 @@ let vocabdeckDays = JSON.parse(localStorage.getItem('vocabdeck_days') || '{}');
 let vocabdeckUsedWords = JSON.parse(localStorage.getItem('vocabdeck_usedWords') || '[]');
 let vocabdeckOpen = null;
 let vocabdeckStepIdx = 0;
-let vocabdeckWriteState = {};
 
 function vocabdeckStatus(day) {
   if (day <= vocabdeckCompleted) return 'done';
@@ -20,10 +19,7 @@ function vocabdeckToggle(day) {
   if (vocabdeckStatus(day) === 'locked') return;
   const opening = vocabdeckOpen !== day;
   vocabdeckOpen = opening ? day : null;
-  if (opening) {
-    vocabdeckStepIdx = 0;
-    vocabdeckWriteState = {};
-  }
+  if (opening) vocabdeckStepIdx = 0;
   renderVocabDeck();
   if (vocabdeckOpen === day) {
     setTimeout(() => {
@@ -37,9 +33,11 @@ const VOCABDECK_JSON_SPEC = `{
   "words": [
     {
       "word": "영단어 원형",
+      "ipa": "국제음성기호(IPA) 발음기호, 슬래시 포함 (예: /meɪnˈteɪn/)",
       "pos": "품사 (동사/명사/형용사/부사 등, 한글로 짧게)",
       "ko": "가장 핵심적인 한국어 뜻 (짧게)",
-      "example": {"en": "이 단어가 실생활 대화에서 실제로 쓰이는 자연스러운 예문 (원어민이 쓸 법한 문장)", "ko": "예문의 한국어 번역"}
+      "example": {"en": "이 단어가 실생활 대화에서 실제로 쓰이는 자연스러운 예문 (원어민이 쓸 법한 문장)", "ko": "예문의 한국어 번역"},
+      "note": "이 예문에서 학습자가 따로 공부해두면 좋은 포인트 - 문법 포인트, 헷갈리기 쉬운 부분, 원어민이 쓰는 뉘앙스, 함께 자주 쓰이는 전치사/표현 등 (2~3문장)"
     }
   ] (8개, 서로 다른 단어)
 }`;
@@ -52,7 +50,7 @@ function vocabdeckPrompt(day, avoidWords) {
 아래 단어들은 이미 이전 DAY에서 다뤘으니 절대 중복해서 고르지 마세요:
 ${avoidWords.length ? avoidWords.join(', ') : '(아직 없음)'}
 
-각 단어마다 뜻만 딱 주지 말고, 그 단어가 실제 문장 속에서 어떻게 쓰이는지 보여주는 자연스러운 예문을 반드시 함께 만들어주세요.
+각 단어마다 뜻만 딱 주지 말고, 그 단어가 실제 문장 속에서 어떻게 쓰이는지 보여주는 자연스러운 예문을 반드시 함께 만들어주세요. 그리고 그 예문을 통해 학습자가 무엇을 추가로 공부해두면 좋을지(문법, 뉘앙스, 자주 같이 쓰이는 표현 등)도 짚어주세요. 발음기호(IPA)도 정확하게 붙여주세요.
 
 다음 JSON 형식으로만 답하세요 (다른 설명 없이 JSON만):
 ${VOCABDECK_JSON_SPEC}`;
@@ -91,48 +89,6 @@ function vocabdeckSpeak(day, wordIdx) {
   if (w) speak(w.example.en);
 }
 
-function vocabdeckEnsureTiles(content, wordIdx) {
-  if (vocabdeckWriteState[wordIdx]) return vocabdeckWriteState[wordIdx];
-  const words = content.words[wordIdx].example.en.split(/\s+/);
-  const pool = words.map((_, i) => i);
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  const state = { words, pool, placed: [], checked: false, correct: false };
-  vocabdeckWriteState[wordIdx] = state;
-  return state;
-}
-
-function vocabdeckTapPool(wordIdx, poolPos) {
-  const st = vocabdeckWriteState[wordIdx];
-  if (!st || st.checked) return;
-  const id = st.pool.splice(poolPos, 1)[0];
-  st.placed.push(id);
-  renderVocabDeck();
-}
-
-function vocabdeckTapPlaced(wordIdx, placedPos) {
-  const st = vocabdeckWriteState[wordIdx];
-  if (!st || st.checked) return;
-  const id = st.placed.splice(placedPos, 1)[0];
-  st.pool.push(id);
-  renderVocabDeck();
-}
-
-function vocabdeckCheckTiles(wordIdx) {
-  const st = vocabdeckWriteState[wordIdx];
-  if (!st) return;
-  st.checked = true;
-  st.correct = st.placed.length === st.words.length && st.placed.every((id, i) => id === i);
-  renderVocabDeck();
-}
-
-function vocabdeckResetTiles(wordIdx) {
-  delete vocabdeckWriteState[wordIdx];
-  renderVocabDeck();
-}
-
 function vocabdeckGoStep(delta) {
   vocabdeckStepIdx += delta;
   renderVocabDeck();
@@ -167,22 +123,19 @@ function vocabdeckIntroCard(day, content) {
           <div class="card-sub">🔥 연속 ${vocabdeckStreak}일째 학습 중</div>
         </div>
       </div>
-      <div style="font-size:13px;line-height:1.7;color:var(--ink-soft);margin-bottom:12px;">단어 뜻만 외우지 말고, 예문과 함께 익히고 직접 따라 써보면서 외워보세요.</div>
-      ${content.words.map((w, i) => `<div style="display:flex;gap:8px;margin-bottom:8px;"><span style="color:var(--accent);font-weight:700;flex-shrink:0;">${i + 1}.</span><span style="color:var(--ink);font-weight:600;">${w.word}</span><span style="color:var(--muted);">${w.ko}</span></div>`).join('')}
+      <div style="font-size:13px;line-height:1.7;color:var(--ink-soft);margin-bottom:12px;">단어 뜻만 외우지 말고, 발음과 예문, 그리고 예문 속 포인트까지 함께 익혀보세요.</div>
+      ${content.words.map((w, i) => `<div style="display:flex;gap:8px;margin-bottom:8px;"><span style="color:var(--accent);font-weight:700;flex-shrink:0;">${i + 1}.</span><span style="color:var(--ink);font-weight:600;">${w.word}</span><span style="color:var(--muted);font-size:13px;">${w.ipa || ''}</span><span style="color:var(--muted);">${w.ko}</span></div>`).join('')}
     </div>`;
 }
 
 function vocabdeckWordCard(day, content, wordIdx) {
   const w = content.words[wordIdx];
-  const st = vocabdeckEnsureTiles(content, wordIdx);
-  const poolHtml = st.pool.map((id, i) => `<button class="vocab-tile" onclick="event.stopPropagation();vocabdeckTapPool(${wordIdx},${i})">${st.words[id]}</button>`).join('');
-  const placedHtml = st.placed.map((id, i) => `<button class="vocab-tile placed" onclick="event.stopPropagation();vocabdeckTapPlaced(${wordIdx},${i})">${st.words[id]}</button>`).join('');
   return `
     <div class="card">
       <div class="card-header">
         <span class="card-emoji">🔤</span>
         <div>
-          <div class="card-title">${wordIdx + 1}. ${w.word} <span style="font-size:12px;color:var(--muted);font-weight:500;">(${w.pos})</span></div>
+          <div class="card-title">${wordIdx + 1}. ${w.word} <span style="font-size:13px;color:var(--accent-strong);font-weight:500;">${w.ipa || ''}</span> <span style="font-size:12px;color:var(--muted);font-weight:500;">(${w.pos})</span></div>
           <div class="card-sub">${w.ko}</div>
         </div>
       </div>
@@ -190,22 +143,11 @@ function vocabdeckWordCard(day, content, wordIdx) {
         <div class="pattern-ex-en">${w.example.en} <button class="spk-btn" onclick="event.stopPropagation();vocabdeckSpeak(${day},${wordIdx})">🔊</button></div>
         <div class="pattern-ex-ko">${w.example.ko}</div>
       </div>
-      <div style="margin-top:14px;">
-        <div style="font-size:12px;font-weight:700;color:var(--accent-strong);margin-bottom:6px;">✍️ 위 예문을 보면서 순서대로 단어를 탭해서 만들어보세요</div>
-        <div style="min-height:44px;border:1px dashed var(--line);border-radius:8px;padding:8px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:6px;background:var(--surface-alt);">
-          ${placedHtml || '<span style="color:var(--muted);font-size:13px;">여기에 순서대로 쌓여요</span>'}
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">${poolHtml}</div>
-        <div style="display:flex;gap:8px;">
-          <button class="step-nav-btn" style="flex:0 0 auto;padding-left:16px;padding-right:16px;" onclick="event.stopPropagation();vocabdeckResetTiles(${wordIdx})">↻ 다시</button>
-          <button class="step-nav-btn primary" style="flex:1;" onclick="event.stopPropagation();vocabdeckCheckTiles(${wordIdx})">확인</button>
-        </div>
-        ${st.checked ? `
-          <div style="margin-top:8px;padding:10px 12px;border-radius:8px;background:${st.correct ? 'var(--success-wash)' : 'var(--warning-wash)'};">
-            <div style="font-size:13px;font-weight:700;color:${st.correct ? 'var(--success)' : 'var(--warning)'};">${st.correct ? '✅ 정확해요!' : '⚠️ 순서가 달라요, 다시 눌러서 해보세요'}</div>
-            ${!st.correct ? `<div style="font-size:13px;color:var(--ink-soft);margin-top:4px;">정답: ${w.example.en}</div>` : ''}
-          </div>` : ''}
-      </div>
+      ${w.note ? `
+        <div style="margin-top:10px;background:var(--warning-wash);border-left:3px solid var(--warning);border-radius:0 8px 8px 0;padding:10px 12px;">
+          <div style="font-size:12px;font-weight:700;color:var(--warning);margin-bottom:4px;">📝 이 예문에서 꼭 봐두세요</div>
+          <div style="font-size:13px;line-height:1.6;color:var(--ink-soft);">${w.note}</div>
+        </div>` : ''}
     </div>`;
 }
 
@@ -271,7 +213,7 @@ function renderVocabDeck() {
         <span class="card-emoji">📚</span>
         <div>
           <div class="card-title">단어+예문 통암기 어휘장</div>
-          <div class="card-sub">단어 뜻만 외우지 말고, 예문과 함께 익히고 손으로 따라 써보세요</div>
+          <div class="card-sub">단어 뜻만 외우지 말고, 발음·예문과 함께 익히고 예문 속 포인트까지 챙기세요</div>
         </div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);">
