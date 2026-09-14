@@ -75,23 +75,50 @@ function splitForTTS(text, maxLen) {
   return chunks.filter(c => c.length > 0);
 }
 
+// Chrome 등에서는 getVoices()가 첫 호출 시 빈 배열을 주고, 'voiceschanged' 이벤트가 발생한 뒤에야
+// 실제 목소리 목록이 채워진다. 이걸 기다리지 않고 바로 find()하면 항상 undefined가 나와서
+// 브라우저 기본(대개 품질이 나쁜) 목소리로 읽히게 된다 - 그래서 여기서 명시적으로 기다린다.
+function _pickEnglishVoice() {
+  return new Promise(resolve => {
+    const pick = () => {
+      const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
+      if (!voices.length) { resolve(null); return; }
+      // 구글/자연스러운(neural, natural) 목소리를 우선하고, 그다음 미국식 영어, 그다음 아무 영어 목소리
+      const best =
+        voices.find(v => /google/i.test(v.name) && v.lang === 'en-US') ||
+        voices.find(v => /google/i.test(v.name)) ||
+        voices.find(v => /natural|neural/i.test(v.name)) ||
+        voices.find(v => v.lang === 'en-US' && !v.localService) ||
+        voices.find(v => v.lang === 'en-US') ||
+        voices[0];
+      resolve(best);
+    };
+    const existing = window.speechSynthesis.getVoices();
+    if (existing.length) { pick(); return; }
+    window.speechSynthesis.onvoiceschanged = pick;
+    setTimeout(pick, 500); // voiceschanged가 안 올 수도 있는 환경 대비 안전장치
+  });
+}
+
+async function _speakFallback(text) {
+  if (!window.speechSynthesis) { _playNextChunk(); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US'; u.rate = 0.9;
+  const v = await _pickEnglishVoice();
+  if (v) u.voice = v;
+  u.onend = _playNextChunk;
+  u.onerror = _playNextChunk;
+  window.speechSynthesis.speak(u);
+}
+
 function _playNextChunk() {
   const next = _speakQueue.shift();
   if (!next) { _audio = null; return; }
   const url = 'https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=en-US&client=tw-ob&q=' + encodeURIComponent(next);
   _audio = new Audio(url);
   _audio.onended = _playNextChunk;
-  _audio.play().catch(() => {
-    // fallback to Web Speech API on desktop
-    if (!window.speechSynthesis) { _playNextChunk(); return; }
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(next);
-    u.lang = 'en-US'; u.rate = 0.9;
-    const v = window.speechSynthesis.getVoices().find(x => x.lang.startsWith('en'));
-    if (v) u.voice = v;
-    u.onend = _playNextChunk;
-    window.speechSynthesis.speak(u);
-  });
+  _audio.play().catch(() => _speakFallback(next));
 }
 
 function speak(text) {
