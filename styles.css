@@ -427,6 +427,15 @@ body {
 .pattern-ex-ko { font-size: 14px; color: var(--muted); margin-top: 4px; }
 .pattern-hint { font-size: 13px; color: var(--muted); margin-top: 6px; }
 
+/* ── Vocab tile (단어 탭해서 문장 만들기) ── */
+.vocab-tile {
+  padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); font-family: var(--font-body);
+  font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s;
+}
+.vocab-tile:hover { background: var(--accent-wash); border-color: var(--accent-soft); }
+.vocab-tile.placed { background: var(--accent-wash-strong); border-color: var(--accent); color: var(--accent-strong); }
+
 /* ── Step flow (단계별 학습) ── */
 .step-track { display: flex; gap: 5px; margin-bottom: 14px; }
 .step-dot { flex: 1; height: 5px; border-radius: 99px; background: var(--line); }

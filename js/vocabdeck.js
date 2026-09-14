@@ -91,17 +91,45 @@ function vocabdeckSpeak(day, wordIdx) {
   if (w) speak(w.example.en);
 }
 
-function vocabdeckNorm(s) {
-  return (s || '').toLowerCase().replace(/[.,!?'"…]/g, '').replace(/\s+/g, ' ').trim();
+function vocabdeckEnsureTiles(content, wordIdx) {
+  if (vocabdeckWriteState[wordIdx]) return vocabdeckWriteState[wordIdx];
+  const words = content.words[wordIdx].example.en.split(/\s+/);
+  const pool = words.map((_, i) => i);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const state = { words, pool, placed: [], checked: false, correct: false };
+  vocabdeckWriteState[wordIdx] = state;
+  return state;
 }
 
-function vocabdeckCheck(day, wordIdx) {
-  const input = document.getElementById('vocabdeck-write-' + wordIdx);
-  const val = input.value;
-  const d = vocabdeckDays[day];
-  const correct = d.words[wordIdx].example.en;
-  const isCorrect = vocabdeckNorm(val) === vocabdeckNorm(correct);
-  vocabdeckWriteState[wordIdx] = { value: val, checked: true, correct: isCorrect };
+function vocabdeckTapPool(wordIdx, poolPos) {
+  const st = vocabdeckWriteState[wordIdx];
+  if (!st || st.checked) return;
+  const id = st.pool.splice(poolPos, 1)[0];
+  st.placed.push(id);
+  renderVocabDeck();
+}
+
+function vocabdeckTapPlaced(wordIdx, placedPos) {
+  const st = vocabdeckWriteState[wordIdx];
+  if (!st || st.checked) return;
+  const id = st.placed.splice(placedPos, 1)[0];
+  st.pool.push(id);
+  renderVocabDeck();
+}
+
+function vocabdeckCheckTiles(wordIdx) {
+  const st = vocabdeckWriteState[wordIdx];
+  if (!st) return;
+  st.checked = true;
+  st.correct = st.placed.length === st.words.length && st.placed.every((id, i) => id === i);
+  renderVocabDeck();
+}
+
+function vocabdeckResetTiles(wordIdx) {
+  delete vocabdeckWriteState[wordIdx];
   renderVocabDeck();
 }
 
@@ -146,7 +174,9 @@ function vocabdeckIntroCard(day, content) {
 
 function vocabdeckWordCard(day, content, wordIdx) {
   const w = content.words[wordIdx];
-  const state = vocabdeckWriteState[wordIdx];
+  const st = vocabdeckEnsureTiles(content, wordIdx);
+  const poolHtml = st.pool.map((id, i) => `<button class="vocab-tile" onclick="event.stopPropagation();vocabdeckTapPool(${wordIdx},${i})">${st.words[id]}</button>`).join('');
+  const placedHtml = st.placed.map((id, i) => `<button class="vocab-tile placed" onclick="event.stopPropagation();vocabdeckTapPlaced(${wordIdx},${i})">${st.words[id]}</button>`).join('');
   return `
     <div class="card">
       <div class="card-header">
@@ -161,13 +191,19 @@ function vocabdeckWordCard(day, content, wordIdx) {
         <div class="pattern-ex-ko">${w.example.ko}</div>
       </div>
       <div style="margin-top:14px;">
-        <div style="font-size:12px;font-weight:700;color:var(--accent-strong);margin-bottom:6px;">✍️ 위 예문을 보면서 손으로 따라 쓰듯 똑같이 타이핑해보세요</div>
-        <textarea id="vocabdeck-write-${wordIdx}" rows="2" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--surface-alt);color:var(--ink);font-size:14px;font-family:var(--font-body);resize:vertical;" onclick="event.stopPropagation();">${state ? state.value : ''}</textarea>
-        <button class="step-nav-btn primary" style="margin-top:8px;width:100%;" onclick="event.stopPropagation();vocabdeckCheck(${day},${wordIdx})">확인</button>
-        ${state && state.checked ? `
-          <div style="margin-top:8px;padding:10px 12px;border-radius:8px;background:${state.correct ? 'var(--success-wash)' : 'var(--warning-wash)'};">
-            <div style="font-size:13px;font-weight:700;color:${state.correct ? 'var(--success)' : 'var(--warning)'};">${state.correct ? '✅ 정확해요!' : '⚠️ 조금 다르네요, 비교해보세요'}</div>
-            ${!state.correct ? `<div style="font-size:13px;color:var(--ink-soft);margin-top:4px;">정답: ${w.example.en}</div>` : ''}
+        <div style="font-size:12px;font-weight:700;color:var(--accent-strong);margin-bottom:6px;">✍️ 위 예문을 보면서 순서대로 단어를 탭해서 만들어보세요</div>
+        <div style="min-height:44px;border:1px dashed var(--line);border-radius:8px;padding:8px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:6px;background:var(--surface-alt);">
+          ${placedHtml || '<span style="color:var(--muted);font-size:13px;">여기에 순서대로 쌓여요</span>'}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">${poolHtml}</div>
+        <div style="display:flex;gap:8px;">
+          <button class="step-nav-btn" style="flex:0 0 auto;padding-left:16px;padding-right:16px;" onclick="event.stopPropagation();vocabdeckResetTiles(${wordIdx})">↻ 다시</button>
+          <button class="step-nav-btn primary" style="flex:1;" onclick="event.stopPropagation();vocabdeckCheckTiles(${wordIdx})">확인</button>
+        </div>
+        ${st.checked ? `
+          <div style="margin-top:8px;padding:10px 12px;border-radius:8px;background:${st.correct ? 'var(--success-wash)' : 'var(--warning-wash)'};">
+            <div style="font-size:13px;font-weight:700;color:${st.correct ? 'var(--success)' : 'var(--warning)'};">${st.correct ? '✅ 정확해요!' : '⚠️ 순서가 달라요, 다시 눌러서 해보세요'}</div>
+            ${!st.correct ? `<div style="font-size:13px;color:var(--ink-soft);margin-top:4px;">정답: ${w.example.en}</div>` : ''}
           </div>` : ''}
       </div>
     </div>`;
