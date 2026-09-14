@@ -43,6 +43,7 @@
     <button class="tab-btn" id="dash-btn-english" onclick="switchDashboard('english')" style="flex:1 1 30%;">💬 영어회화</button>
     <button class="tab-btn" id="dash-btn-opic" onclick="switchDashboard('opic')" style="flex:1 1 30%;">🎤 오픽</button>
     <button class="tab-btn" id="dash-btn-vocab" onclick="switchDashboard('vocab')" style="flex:1 1 30%;">📖 단어</button>
+    <button class="tab-btn" id="dash-btn-vocabdeck" onclick="switchDashboard('vocabdeck')" style="flex:1 1 30%;">📚 어휘</button>
     <button class="tab-btn" id="dash-btn-company" onclick="switchDashboard('company')" style="flex:1 1 30%;">💼 회사</button>
     <button class="tab-btn" id="dash-btn-lesson96" onclick="switchDashboard('lesson96')" style="flex:1 1 30%;">📺 96강</button>
   </div>
@@ -246,6 +247,11 @@
     <div id="lesson96-content"></div>
   </div>
 
+  <!-- ── 어휘 Tab (단어+예문 통암기) ── -->
+  <div id="tab-vocabdeck" class="hidden">
+    <div id="vocabdeck-content"></div>
+  </div>
+
   <!-- ── 질문하기(NotebookLM 스타일 채팅) Tab ── -->
   <div id="tab-companyAsk" class="hidden">
     <div class="card">
@@ -285,6 +291,7 @@
 <script src="js/ppt.js"></script>
 <script src="js/lesson96-data.js"></script>
 <script src="js/lesson96.js"></script>
+<script src="js/vocabdeck.js"></script>
 <script>init();</script>
 </body>
 </html>

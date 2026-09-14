@@ -115,13 +115,20 @@ async function speakNative(text) {
 }
 
 // ── Tab switch ──
-const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','review','ppt','opic','notes','companyDash','companyAsk','lesson96'];
+const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','review','ppt','opic','notes','companyDash','companyAsk','lesson96','vocabdeck'];
 const DASHBOARDS = {
   lesson96: {
     label: '📺 96강',
     title: '왕초보 영어회화 96강',
     tabs: [
       { id: 'lesson96', label: '📺 강의목록' },
+    ],
+  },
+  vocabdeck: {
+    label: '📚 어휘',
+    title: '단어+예문 통암기 어휘장',
+    tabs: [
+      { id: 'vocabdeck', label: '📚 어휘' },
     ],
   },
   english: {
@@ -226,6 +233,9 @@ function switchTab(name, skipHistory) {
   }
   if (name === 'lesson96') {
     renderLesson96();
+  }
+  if (name === 'vocabdeck') {
+    renderVocabDeck();
   }
   if (!skipHistory) pushHistoryState();
 }
