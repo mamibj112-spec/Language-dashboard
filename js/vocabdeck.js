@@ -10,6 +10,8 @@ let vocabdeckOpen = null;
 let vocabdeckStepIdx = 0;
 let vocabdeckReviewOpen = null;
 let vocabdeckReviewQuiz = null;
+let vocabdeckRandomOpen = false;
+let vocabdeckRandomWord = null;
 
 function vocabdeckStatus(day) {
   if (day <= vocabdeckCompleted) return 'done';
@@ -206,6 +208,33 @@ function vocabdeckReviewGoStep(delta) {
   renderVocabDeck();
 }
 
+// ── 랜덤 단어 복습 (지금까지 배운 단어 중 하나씩 랜덤으로 보여주고 읽어주기) ──
+function vocabdeckAllWords() {
+  const all = [];
+  Object.keys(vocabdeckDays).forEach(day => {
+    vocabdeckDays[day].words.forEach(w => all.push(w));
+  });
+  return all;
+}
+
+function vocabdeckRandomNext() {
+  const all = vocabdeckAllWords();
+  if (!all.length) { vocabdeckRandomWord = null; renderVocabDeck(); return; }
+  vocabdeckRandomWord = all[Math.floor(Math.random() * all.length)];
+  renderVocabDeck();
+  speak(vocabdeckRandomWord.word);
+}
+
+function vocabdeckToggleRandom() {
+  vocabdeckRandomOpen = !vocabdeckRandomOpen;
+  if (vocabdeckRandomOpen) {
+    vocabdeckRandomNext();
+  } else {
+    vocabdeckRandomWord = null;
+    renderVocabDeck();
+  }
+}
+
 function vocabdeckIntroCard(day, content) {
   return `
     <div class="card">
@@ -340,6 +369,35 @@ function vocabdeckReviewRow(throughDay) {
     </div>`;
 }
 
+function vocabdeckRandomSection() {
+  if (!vocabdeckRandomOpen) return '';
+  const w = vocabdeckRandomWord;
+  if (!w) {
+    return `<div class="card">아직 학습한 단어가 없어요. DAY 1부터 시작해보세요!</div>`;
+  }
+  return `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-emoji">🔀</span>
+        <div>
+          <div class="card-title">${w.word} <span style="font-size:13px;color:var(--accent-strong);font-weight:500;">${vocabdeckPron(w)}</span></div>
+          <div class="card-sub">${w.pos || ''}</div>
+        </div>
+        <button class="spk-btn" onclick="speak('${w.word.replace(/'/g, "\\'")}')">🔊</button>
+      </div>
+      <div style="font-size:22px;font-weight:700;color:var(--ink);text-align:center;margin:18px 0;">${w.ko}</div>
+      ${w.example ? `
+        <div class="pattern-ex">
+          <div class="pattern-ex-en">${w.example.en} <button class="spk-btn" onclick="speak('${w.example.en.replace(/'/g, "\\'")}')">🔊</button></div>
+          <div class="pattern-ex-ko">${w.example.ko}</div>
+        </div>` : ''}
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="step-nav-btn" style="flex:1;" onclick="vocabdeckToggleRandom()">닫기</button>
+        <button class="step-nav-btn primary" style="flex:1;" onclick="vocabdeckRandomNext()">🔀 다음 단어</button>
+      </div>
+    </div>`;
+}
+
 function vocabdeckStepDefs(content) {
   const steps = [{ key: 'intro', emoji: '📋', label: '오늘 배울 단어' }];
   content.words.forEach((w, i) => steps.push({ key: 'word', wordIdx: i, emoji: '🔤', label: w.word }));
@@ -398,11 +456,13 @@ function renderVocabDeck() {
           <div class="card-sub">단어 뜻만 외우지 말고, 발음·예문과 함께 익히고 예문 속 포인트까지 챙기세요</div>
         </div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);">
+      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:12px;">
         <span>🔥 연속 ${vocabdeckStreak}일</span>
         <span>${vocabdeckCompleted}일 완료</span>
       </div>
-    </div>`;
+      <button class="complete-btn" style="background:var(--accent-strong);" onclick="vocabdeckToggleRandom()">${vocabdeckRandomOpen ? '🔀 랜덤 복습 닫기' : '🔀 배운 단어 랜덤 복습하기'}</button>
+    </div>
+    ${vocabdeckRandomSection()}`;
 
   const maxDay = vocabdeckCompleted + 1;
   const rows = [];
