@@ -210,7 +210,14 @@ function vocabdeckIntroCard(day, content) {
         </div>
       </div>
       <div style="font-size:13px;line-height:1.7;color:var(--ink-soft);margin-bottom:12px;">단어 뜻만 외우지 말고, 발음과 예문, 그리고 예문 속 포인트까지 함께 익혀보세요.</div>
-      ${content.words.map((w, i) => `<div style="display:flex;gap:8px;margin-bottom:8px;"><span style="color:var(--accent);font-weight:700;flex-shrink:0;">${i + 1}.</span><span style="color:var(--ink);font-weight:600;">${w.word}</span><span style="color:var(--muted);font-size:13px;">${w.ipa || ''}</span><span style="color:var(--muted);">${w.ko}</span></div>`).join('')}
+      ${content.words.map((w, i) => `
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <span style="color:var(--accent);font-weight:700;flex-shrink:0;">${i + 1}.</span>
+          <div style="min-width:0;">
+            <div style="color:var(--ink);font-weight:600;">${w.word} <span style="color:var(--muted);font-weight:500;font-size:12px;">${w.ipa || ''}</span></div>
+            <div style="color:var(--muted);font-size:13px;margin-top:1px;">${w.ko}</div>
+          </div>
+        </div>`).join('')}
     </div>`;
 }
 
