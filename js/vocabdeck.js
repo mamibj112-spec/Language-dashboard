@@ -36,6 +36,7 @@ const VOCABDECK_JSON_SPEC = `{
     {
       "word": "영단어 원형",
       "ipa": "국제음성기호(IPA) 발음기호, 슬래시 포함 (예: /meɪnˈteɪn/)",
+      "kopron": "읽기 편하라고 참고용으로만 다는 한글 표기 발음 (예: 메인테인). 정확한 발음은 IPA와 음성 재생으로 확인하는 거라 안내했으니, 강세 있는 음절 위주로 자연스럽게 한글로만 적어주세요",
       "pos": "품사 (동사/명사/형용사/부사 등, 한글로 짧게)",
       "ko": "가장 핵심적인 한국어 뜻 (짧게)",
       "example": {
@@ -56,7 +57,7 @@ function vocabdeckPrompt(day, avoidWords) {
 아래 단어들은 이미 이전 DAY에서 다뤘으니 절대 중복해서 고르지 마세요:
 ${avoidWords.length ? avoidWords.join(', ') : '(아직 없음)'}
 
-각 단어마다 뜻만 딱 주지 말고, 그 단어가 실제 문장 속에서 어떻게 쓰이는지 보여주는 자연스러운 예문을 반드시 함께 만들어주세요. 예문 안에 메인 단어 말고도 학습자가 모를 수 있는 단어나 숙어, 구동사가 있으면 절대 그냥 넘어가지 말고 따로 뽑아서 뜻을 설명해주세요. 그리고 그 예문을 통해 학습자가 무엇을 추가로 공부해두면 좋을지(문법, 뉘앙스, 자주 같이 쓰이는 표현 등)도 짚어주세요. 발음기호(IPA)도 정확하게 붙여주세요.
+각 단어마다 뜻만 딱 주지 말고, 그 단어가 실제 문장 속에서 어떻게 쓰이는지 보여주는 자연스러운 예문을 반드시 함께 만들어주세요. 예문 안에 메인 단어 말고도 학습자가 모를 수 있는 단어나 숙어, 구동사가 있으면 절대 그냥 넘어가지 말고 따로 뽑아서 뜻을 설명해주세요. 그리고 그 예문을 통해 학습자가 무엇을 추가로 공부해두면 좋을지(문법, 뉘앙스, 자주 같이 쓰이는 표현 등)도 짚어주세요. 발음기호(IPA)도 정확하게 붙여주고, IPA를 못 읽는 학습자를 위해 빠르게 읽을 수 있는 한글 표기 발음도 참고용으로 함께 달아주세요 (정확한 원어민 발음은 음성 재생 버튼으로 확인하게 될 거라, 한글 표기는 완벽함보다 읽기 편함이 우선이에요).
 
 다음 JSON 형식으로만 답하세요 (다른 설명 없이 JSON만):
 ${VOCABDECK_JSON_SPEC}`;
@@ -87,6 +88,12 @@ async function vocabdeckGenerate(day) {
     btn.disabled = false;
     btn.textContent = originalText;
   }
+}
+
+function vocabdeckPron(w) {
+  const ipa = w.ipa || '';
+  const kopron = w.kopron ? ` (${w.kopron})` : '';
+  return ipa + kopron;
 }
 
 function vocabdeckSpeak(day, wordIdx) {
@@ -154,7 +161,7 @@ function vocabdeckBuildReviewQuiz(throughDay) {
     if (blanked && Math.random() < 0.5) {
       return { type: 'blank', prompt: blanked, ko: w.example.ko, correct: w.word, options: vocabdeckShuffled([w.word, ...distractors.map(d => d.word)]) };
     }
-    return { type: 'meaning', prompt: w.word, ipa: w.ipa, correct: w.ko, options: vocabdeckShuffled([w.ko, ...distractors.map(d => d.ko)]) };
+    return { type: 'meaning', prompt: w.word, ipa: vocabdeckPron(w), correct: w.ko, options: vocabdeckShuffled([w.ko, ...distractors.map(d => d.ko)]) };
   });
   return { throughDay, questions, idx: 0, answers: {} };
 }
@@ -214,7 +221,7 @@ function vocabdeckIntroCard(day, content) {
         <div style="display:flex;gap:8px;margin-bottom:10px;">
           <span style="color:var(--accent);font-weight:700;flex-shrink:0;">${i + 1}.</span>
           <div style="min-width:0;">
-            <div style="color:var(--ink);font-weight:600;">${w.word} <span style="color:var(--muted);font-weight:500;font-size:12px;">${w.ipa || ''}</span></div>
+            <div style="color:var(--ink);font-weight:600;">${w.word} <span style="color:var(--muted);font-weight:500;font-size:12px;">${vocabdeckPron(w)}</span></div>
             <div style="color:var(--muted);font-size:13px;margin-top:1px;">${w.ko}</div>
           </div>
         </div>`).join('')}
@@ -228,7 +235,7 @@ function vocabdeckWordCard(day, content, wordIdx) {
       <div class="card-header">
         <span class="card-emoji">🔤</span>
         <div>
-          <div class="card-title">${wordIdx + 1}. ${w.word} <span style="font-size:13px;color:var(--accent-strong);font-weight:500;">${w.ipa || ''}</span> <span style="font-size:12px;color:var(--muted);font-weight:500;">(${w.pos})</span></div>
+          <div class="card-title">${wordIdx + 1}. ${w.word} <span style="font-size:13px;color:var(--accent-strong);font-weight:500;">${vocabdeckPron(w)}</span> <span style="font-size:12px;color:var(--muted);font-weight:500;">(${w.pos})</span></div>
           <div class="card-sub">${w.ko}</div>
         </div>
       </div>
