@@ -112,20 +112,31 @@ async function _speakFallback(text) {
   window.speechSynthesis.speak(u);
 }
 
+let _speakOnDone = null;
+
 function _playNextChunk() {
   const next = _speakQueue.shift();
-  if (!next) { _audio = null; return; }
+  if (!next) {
+    _audio = null;
+    if (_speakOnDone) { const cb = _speakOnDone; _speakOnDone = null; cb(); }
+    return;
+  }
   const url = 'https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=en-US&client=tw-ob&q=' + encodeURIComponent(next);
   _audio = new Audio(url);
   _audio.onended = _playNextChunk;
   _audio.play().catch(() => _speakFallback(next));
 }
 
-function speak(text) {
-  if (isNativeApp()) { speakNative(text); return; }
+// onDone(선택): 읽기가 끝까지 다 재생된 뒤 호출됨 - 자동 재생 루프처럼 "다 읽으면 다음으로" 이어가야 할 때 사용
+function speak(text, onDone) {
+  if (isNativeApp()) {
+    speakNative(text).then(() => { if (onDone) onDone(); });
+    return;
+  }
   if (_audio) { _audio.pause(); _audio = null; }
   if (window.speechSynthesis) window.speechSynthesis.cancel();
   _speakQueue = splitForTTS(text, 190);
+  _speakOnDone = onDone || null;
   _playNextChunk();
 }
 

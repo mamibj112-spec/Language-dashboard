@@ -208,7 +208,9 @@ function vocabdeckReviewGoStep(delta) {
   renderVocabDeck();
 }
 
-// ── 랜덤 단어 복습 (지금까지 배운 단어 중 하나씩 랜덤으로 보여주고 읽어주기) ──
+// ── 랜덤 단어 복습 (지금까지 배운 단어를 하나씩 랜덤으로 자동 재생 - 손 안 대고 계속 들을 수 있게) ──
+let vocabdeckRandomTimer = null;
+
 function vocabdeckAllWords() {
   const all = [];
   Object.keys(vocabdeckDays).forEach(day => {
@@ -218,19 +220,34 @@ function vocabdeckAllWords() {
 }
 
 function vocabdeckRandomNext() {
+  if (vocabdeckRandomTimer) { clearTimeout(vocabdeckRandomTimer); vocabdeckRandomTimer = null; }
+  if (!vocabdeckRandomOpen) return;
   const all = vocabdeckAllWords();
   if (!all.length) { vocabdeckRandomWord = null; renderVocabDeck(); return; }
   vocabdeckRandomWord = all[Math.floor(Math.random() * all.length)];
   renderVocabDeck();
-  speak(vocabdeckRandomWord.word);
+
+  const w = vocabdeckRandomWord;
+  const afterSpeaking = () => {
+    if (!vocabdeckRandomOpen) return;
+    vocabdeckRandomTimer = setTimeout(vocabdeckRandomNext, 1500);
+  };
+  if (w.example && w.example.en) {
+    speak(w.word, () => { if (vocabdeckRandomOpen) speak(w.example.en, afterSpeaking); });
+  } else {
+    speak(w.word, afterSpeaking);
+  }
 }
 
 function vocabdeckToggleRandom() {
   vocabdeckRandomOpen = !vocabdeckRandomOpen;
+  if (vocabdeckRandomTimer) { clearTimeout(vocabdeckRandomTimer); vocabdeckRandomTimer = null; }
   if (vocabdeckRandomOpen) {
     vocabdeckRandomNext();
   } else {
     vocabdeckRandomWord = null;
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    if (_audio) { _audio.pause(); }
     renderVocabDeck();
   }
 }
@@ -381,7 +398,7 @@ function vocabdeckRandomSection() {
         <span class="card-emoji">🔀</span>
         <div>
           <div class="card-title">${w.word} <span style="font-size:13px;color:var(--accent-strong);font-weight:500;">${vocabdeckPron(w)}</span></div>
-          <div class="card-sub">${w.pos || ''}</div>
+          <div class="card-sub">🔁 자동으로 계속 재생 중 · ${w.pos || ''}</div>
         </div>
         <button class="spk-btn" onclick="speak('${w.word.replace(/'/g, "\\'")}')">🔊</button>
       </div>
