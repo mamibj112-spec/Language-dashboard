@@ -210,6 +210,7 @@ function vocabdeckReviewGoStep(delta) {
 
 // ── 랜덤 단어 복습 (지금까지 배운 단어를 하나씩 랜덤으로 자동 재생 - 손 안 대고 계속 들을 수 있게) ──
 let vocabdeckRandomTimer = null;
+let vocabdeckRandomPaused = false;
 
 function vocabdeckAllWords() {
   const all = [];
@@ -219,20 +220,44 @@ function vocabdeckAllWords() {
   return all;
 }
 
+// 현재 보여주고 있는 단어를 (영어 → 한국어 뜻 순으로) 읽고, 다 읽으면 잠깐 쉬었다가 다음 단어로 - 일시정지 중이면 아무것도 안 함
+function vocabdeckSpeakCurrentAndSchedule() {
+  const w = vocabdeckRandomWord;
+  if (!w) return;
+  const afterSpeaking = () => {
+    if (!vocabdeckRandomOpen || vocabdeckRandomPaused) return;
+    vocabdeckRandomTimer = setTimeout(vocabdeckRandomNext, 1500);
+  };
+  speak(w.word, () => {
+    if (!vocabdeckRandomOpen || vocabdeckRandomPaused) return;
+    speak(w.ko, afterSpeaking, 'ko-KR');
+  });
+}
+
 function vocabdeckRandomNext() {
   if (vocabdeckRandomTimer) { clearTimeout(vocabdeckRandomTimer); vocabdeckRandomTimer = null; }
   if (!vocabdeckRandomOpen) return;
+  vocabdeckRandomPaused = false;
   const all = vocabdeckAllWords();
   if (!all.length) { vocabdeckRandomWord = null; renderVocabDeckFullscreen(); return; }
   vocabdeckRandomWord = all[Math.floor(Math.random() * all.length)];
   renderVocabDeckFullscreen();
+  vocabdeckSpeakCurrentAndSchedule();
+}
 
-  const w = vocabdeckRandomWord;
-  const afterSpeaking = () => {
-    if (!vocabdeckRandomOpen) return;
-    vocabdeckRandomTimer = setTimeout(vocabdeckRandomNext, 1500);
-  };
-  speak(w.word, () => { if (vocabdeckRandomOpen) speak(w.ko, afterSpeaking, 'ko-KR'); });
+function vocabdeckRandomPause() {
+  vocabdeckRandomPaused = true;
+  if (vocabdeckRandomTimer) { clearTimeout(vocabdeckRandomTimer); vocabdeckRandomTimer = null; }
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  if (_audio) { _audio.pause(); }
+  renderVocabDeckFullscreen();
+}
+
+function vocabdeckRandomResume() {
+  vocabdeckRandomPaused = false;
+  renderVocabDeckFullscreen();
+  if (!vocabdeckRandomWord) { vocabdeckRandomNext(); return; }
+  vocabdeckSpeakCurrentAndSchedule();
 }
 
 function vocabdeckToggleRandom() {
@@ -242,6 +267,7 @@ function vocabdeckToggleRandom() {
     vocabdeckRandomNext();
   } else {
     vocabdeckRandomWord = null;
+    vocabdeckRandomPaused = false;
     if (window.speechSynthesis) window.speechSynthesis.cancel();
     if (_audio) { _audio.pause(); }
     renderVocabDeckFullscreen();
@@ -399,13 +425,18 @@ function renderVocabDeckFullscreen() {
     return;
   }
 
+  const pauseIcon = vocabdeckRandomPaused ? '▶️' : '⏸';
+  const pauseAction = vocabdeckRandomPaused ? 'vocabdeckRandomResume()' : 'vocabdeckRandomPause()';
+  const statusText = vocabdeckRandomPaused ? '⏸ 일시정지됨' : '🔁 자동 재생 중';
+
   el.innerHTML = `
     <div style="position:fixed;inset:0;background:var(--paper);z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;" onclick="vocabdeckRandomNext()">
       <button onclick="event.stopPropagation();vocabdeckToggleRandom()" style="position:absolute;top:20px;right:20px;width:44px;height:44px;border-radius:50%;background:var(--surface-alt);color:var(--ink);border:none;font-size:20px;cursor:pointer;">✕</button>
-      <div style="position:absolute;top:24px;left:20px;font-size:13px;color:var(--muted);font-weight:700;">🔁 자동 재생 중 · 화면 탭하면 다음 단어</div>
+      <div style="position:absolute;top:24px;left:20px;font-size:13px;color:var(--muted);font-weight:700;">${statusText} · 화면 탭하면 다음 단어</div>
       <div style="font-family:var(--font-display);font-size:44px;font-weight:700;color:var(--ink);line-height:1.2;word-break:break-word;">${w.word}</div>
       <div style="font-size:18px;color:var(--accent-strong);font-weight:600;margin-top:10px;">${vocabdeckPron(w)}</div>
       <div style="font-size:34px;font-weight:700;color:var(--accent-soft);margin-top:40px;word-break:keep-all;">${w.ko}</div>
+      <button onclick="event.stopPropagation();${pauseAction}" style="position:absolute;bottom:40px;width:64px;height:64px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;">${pauseIcon}</button>
     </div>`;
 }
 
