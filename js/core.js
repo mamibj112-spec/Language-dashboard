@@ -78,18 +78,19 @@ function splitForTTS(text, maxLen) {
 // Chrome 등에서는 getVoices()가 첫 호출 시 빈 배열을 주고, 'voiceschanged' 이벤트가 발생한 뒤에야
 // 실제 목소리 목록이 채워진다. 이걸 기다리지 않고 바로 find()하면 항상 undefined가 나와서
 // 브라우저 기본(대개 품질이 나쁜) 목소리로 읽히게 된다 - 그래서 여기서 명시적으로 기다린다.
-function _pickEnglishVoice() {
+function _pickVoiceForLang(lang) {
+  const prefix = lang.split('-')[0];
   return new Promise(resolve => {
     const pick = () => {
-      const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
+      const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith(prefix));
       if (!voices.length) { resolve(null); return; }
-      // 구글/자연스러운(neural, natural) 목소리를 우선하고, 그다음 미국식 영어, 그다음 아무 영어 목소리
+      // 구글/자연스러운(neural, natural) 목소리를 우선하고, 그다음 정확한 로케일, 그다음 아무 목소리
       const best =
-        voices.find(v => /google/i.test(v.name) && v.lang === 'en-US') ||
+        voices.find(v => /google/i.test(v.name) && v.lang === lang) ||
         voices.find(v => /google/i.test(v.name)) ||
         voices.find(v => /natural|neural/i.test(v.name)) ||
-        voices.find(v => v.lang === 'en-US' && !v.localService) ||
-        voices.find(v => v.lang === 'en-US') ||
+        voices.find(v => v.lang === lang && !v.localService) ||
+        voices.find(v => v.lang === lang) ||
         voices[0];
       resolve(best);
     };
@@ -100,12 +101,12 @@ function _pickEnglishVoice() {
   });
 }
 
-async function _speakFallback(text) {
+async function _speakFallback(text, lang) {
   if (!window.speechSynthesis) { _playNextChunk(); return; }
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'en-US'; u.rate = 0.9;
-  const v = await _pickEnglishVoice();
+  u.lang = lang; u.rate = 0.9;
+  const v = await _pickVoiceForLang(lang);
   if (v) u.voice = v;
   u.onend = _playNextChunk;
   u.onerror = _playNextChunk;
@@ -113,6 +114,7 @@ async function _speakFallback(text) {
 }
 
 let _speakOnDone = null;
+let _speakLang = 'en-US';
 
 function _playNextChunk() {
   const next = _speakQueue.shift();
@@ -121,20 +123,24 @@ function _playNextChunk() {
     if (_speakOnDone) { const cb = _speakOnDone; _speakOnDone = null; cb(); }
     return;
   }
-  const url = 'https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=en-US&client=tw-ob&q=' + encodeURIComponent(next);
+  const tl = _speakLang === 'ko-KR' ? 'ko' : 'en-US';
+  const url = 'https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=' + tl + '&client=tw-ob&q=' + encodeURIComponent(next);
   _audio = new Audio(url);
   _audio.onended = _playNextChunk;
-  _audio.play().catch(() => _speakFallback(next));
+  _audio.play().catch(() => _speakFallback(next, _speakLang));
 }
 
 // onDone(선택): 읽기가 끝까지 다 재생된 뒤 호출됨 - 자동 재생 루프처럼 "다 읽으면 다음으로" 이어가야 할 때 사용
-function speak(text, onDone) {
+// lang(선택, 기본 'en-US'): 'ko-KR'을 주면 한국어로 읽음 (예: 단어 뜻 읽어주기)
+function speak(text, onDone, lang) {
+  const useLang = lang || 'en-US';
   if (isNativeApp()) {
-    speakNative(text).then(() => { if (onDone) onDone(); });
+    speakNative(text, useLang).then(() => { if (onDone) onDone(); });
     return;
   }
   if (_audio) { _audio.pause(); _audio = null; }
   if (window.speechSynthesis) window.speechSynthesis.cancel();
+  _speakLang = useLang;
   _speakQueue = splitForTTS(text, 190);
   _speakOnDone = onDone || null;
   _playNextChunk();
@@ -142,11 +148,11 @@ function speak(text, onDone) {
 
 // 네이티브 앱(APK)에서는 안드로이드 WebView가 오디오/음성합성을 제대로 지원하지 않는 경우가 많아
 // Capacitor 네이티브 TTS 플러그인을 대신 사용한다.
-async function speakNative(text) {
+async function speakNative(text, lang) {
   try {
     const TextToSpeech = window.Capacitor.Plugins.TextToSpeech;
     await TextToSpeech.stop();
-    await TextToSpeech.speak({ text, lang: 'en-US', rate: 0.9, pitch: 1.0, volume: 1.0, category: 'playback' });
+    await TextToSpeech.speak({ text, lang: lang || 'en-US', rate: 0.9, pitch: 1.0, volume: 1.0, category: 'playback' });
   } catch (e) {
     console.warn('Native TTS failed:', e.message);
   }

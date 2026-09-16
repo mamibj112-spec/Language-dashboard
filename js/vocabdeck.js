@@ -223,20 +223,16 @@ function vocabdeckRandomNext() {
   if (vocabdeckRandomTimer) { clearTimeout(vocabdeckRandomTimer); vocabdeckRandomTimer = null; }
   if (!vocabdeckRandomOpen) return;
   const all = vocabdeckAllWords();
-  if (!all.length) { vocabdeckRandomWord = null; renderVocabDeck(); return; }
+  if (!all.length) { vocabdeckRandomWord = null; renderVocabDeckFullscreen(); return; }
   vocabdeckRandomWord = all[Math.floor(Math.random() * all.length)];
-  renderVocabDeck();
+  renderVocabDeckFullscreen();
 
   const w = vocabdeckRandomWord;
   const afterSpeaking = () => {
     if (!vocabdeckRandomOpen) return;
     vocabdeckRandomTimer = setTimeout(vocabdeckRandomNext, 1500);
   };
-  if (w.example && w.example.en) {
-    speak(w.word, () => { if (vocabdeckRandomOpen) speak(w.example.en, afterSpeaking); });
-  } else {
-    speak(w.word, afterSpeaking);
-  }
+  speak(w.word, () => { if (vocabdeckRandomOpen) speak(w.ko, afterSpeaking, 'ko-KR'); });
 }
 
 function vocabdeckToggleRandom() {
@@ -248,8 +244,9 @@ function vocabdeckToggleRandom() {
     vocabdeckRandomWord = null;
     if (window.speechSynthesis) window.speechSynthesis.cancel();
     if (_audio) { _audio.pause(); }
-    renderVocabDeck();
+    renderVocabDeckFullscreen();
   }
+  renderVocabDeck();
 }
 
 function vocabdeckIntroCard(day, content) {
@@ -386,32 +383,29 @@ function vocabdeckReviewRow(throughDay) {
     </div>`;
 }
 
-function vocabdeckRandomSection() {
-  if (!vocabdeckRandomOpen) return '';
+function renderVocabDeckFullscreen() {
+  const el = document.getElementById('vocabdeck-fullscreen');
+  if (!el) return;
+
+  if (!vocabdeckRandomOpen) { el.innerHTML = ''; return; }
+
   const w = vocabdeckRandomWord;
   if (!w) {
-    return `<div class="card">아직 학습한 단어가 없어요. DAY 1부터 시작해보세요!</div>`;
+    el.innerHTML = `
+      <div style="position:fixed;inset:0;background:var(--paper);z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;">
+        <div style="color:var(--ink-soft);font-size:16px;margin-bottom:20px;">아직 학습한 단어가 없어요.<br>DAY 1부터 시작해보세요!</div>
+        <button class="step-nav-btn primary" onclick="vocabdeckToggleRandom()">닫기</button>
+      </div>`;
+    return;
   }
-  return `
-    <div class="card">
-      <div class="card-header">
-        <span class="card-emoji">🔀</span>
-        <div>
-          <div class="card-title">${w.word} <span style="font-size:13px;color:var(--accent-strong);font-weight:500;">${vocabdeckPron(w)}</span></div>
-          <div class="card-sub">🔁 자동으로 계속 재생 중 · ${w.pos || ''}</div>
-        </div>
-        <button class="spk-btn" onclick="speak('${w.word.replace(/'/g, "\\'")}')">🔊</button>
-      </div>
-      <div style="font-size:22px;font-weight:700;color:var(--ink);text-align:center;margin:18px 0;">${w.ko}</div>
-      ${w.example ? `
-        <div class="pattern-ex">
-          <div class="pattern-ex-en">${w.example.en} <button class="spk-btn" onclick="speak('${w.example.en.replace(/'/g, "\\'")}')">🔊</button></div>
-          <div class="pattern-ex-ko">${w.example.ko}</div>
-        </div>` : ''}
-      <div style="display:flex;gap:8px;margin-top:12px;">
-        <button class="step-nav-btn" style="flex:1;" onclick="vocabdeckToggleRandom()">닫기</button>
-        <button class="step-nav-btn primary" style="flex:1;" onclick="vocabdeckRandomNext()">🔀 다음 단어</button>
-      </div>
+
+  el.innerHTML = `
+    <div style="position:fixed;inset:0;background:var(--paper);z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;" onclick="vocabdeckRandomNext()">
+      <button onclick="event.stopPropagation();vocabdeckToggleRandom()" style="position:absolute;top:20px;right:20px;width:44px;height:44px;border-radius:50%;background:var(--surface-alt);color:var(--ink);border:none;font-size:20px;cursor:pointer;">✕</button>
+      <div style="position:absolute;top:24px;left:20px;font-size:13px;color:var(--muted);font-weight:700;">🔁 자동 재생 중 · 화면 탭하면 다음 단어</div>
+      <div style="font-family:var(--font-display);font-size:44px;font-weight:700;color:var(--ink);line-height:1.2;word-break:break-word;">${w.word}</div>
+      <div style="font-size:18px;color:var(--accent-strong);font-weight:600;margin-top:10px;">${vocabdeckPron(w)}</div>
+      <div style="font-size:34px;font-weight:700;color:var(--accent-soft);margin-top:40px;word-break:keep-all;">${w.ko}</div>
     </div>`;
 }
 
@@ -477,9 +471,8 @@ function renderVocabDeck() {
         <span>🔥 연속 ${vocabdeckStreak}일</span>
         <span>${vocabdeckCompleted}일 완료</span>
       </div>
-      <button class="complete-btn" style="background:var(--accent-strong);" onclick="vocabdeckToggleRandom()">${vocabdeckRandomOpen ? '🔀 랜덤 복습 닫기' : '🔀 배운 단어 랜덤 복습하기'}</button>
-    </div>
-    ${vocabdeckRandomSection()}`;
+      <button class="complete-btn" style="background:var(--accent-strong);" onclick="vocabdeckToggleRandom()">🔀 배운 단어 랜덤 복습하기</button>
+    </div>`;
 
   const maxDay = vocabdeckCompleted + 1;
   const rows = [];
