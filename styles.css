@@ -439,6 +439,14 @@ body {
 .mc-option.wrong { background: var(--danger-wash); border-color: var(--danger); color: var(--danger); }
 .mc-option.disabled { cursor: default; }
 
+/* ── 예문 하이라이트 (영어 단어 = 노랑, 번역 속 대응하는 뜻 = 주황) ── */
+.hl-en, .hl-ko {
+  font-weight: 700; border-radius: 4px; padding: 0 3px;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.hl-en { background: rgba(250,204,21,0.28); color: #FEF08A; text-decoration-color: #FACC15; }
+.hl-ko { background: rgba(249,115,22,0.30); color: #FDBA74; text-decoration-color: #F97316; }
+
 /* ── Step flow (단계별 학습) ── */
 .step-track { display: flex; gap: 5px; margin-bottom: 14px; }
 .step-dot { flex: 1; height: 5px; border-radius: 99px; background: var(--line); }
