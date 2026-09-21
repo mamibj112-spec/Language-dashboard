@@ -115,8 +115,9 @@ async function vocabdeckGenerate(day) {
 }
 
 function vocabdeckPron(w) {
-  const ipa = w.ipa || '';
-  const kopron = w.kopron ? ` (${w.kopron})` : '';
+  const nb = t => `<span style="white-space:nowrap;">${t}</span>`;
+  const ipa = w.ipa ? nb(w.ipa) : '';
+  const kopron = w.kopron ? ' ' + nb(`(${w.kopron})`) : '';
   return ipa + kopron;
 }
 
@@ -340,7 +341,7 @@ function vocabdeckIntroCard(day, content) {
       ${content.words.map((w, i) => `
         <div style="display:flex;gap:8px;margin-bottom:10px;">
           <span style="color:var(--accent);font-weight:700;flex-shrink:0;">${i + 1}.</span>
-          <div style="min-width:0;color:var(--ink);font-weight:600;">${w.word} <span style="color:var(--muted);font-weight:500;font-size:12px;">${vocabdeckPron(w)}</span></div>
+          <div class="vd-hand" style="min-width:0;color:var(--ink);font-weight:600;font-size:20px;">${w.word} <span style="color:var(--muted);font-weight:500;font-size:12px;">${vocabdeckPron(w)}</span></div>
         </div>`).join('')}
     </div>`;
 }
@@ -353,8 +354,8 @@ function vocabdeckWordCard(day, content, wordIdx) {
   const koHtml = vocabdeckHighlight(ex.ko, ex.koMatch, 'hl-ko');
 
   const meaningBlock = lv >= 1 ? `
-    <div style="text-align:center;font-size:28px;font-weight:700;color:var(--accent-soft);margin:16px 0 4px;word-break:keep-all;">${w.ko}</div>
-    ${w.koMore ? `<div style="text-align:center;font-size:15px;color:var(--ink-soft);margin-bottom:8px;">${w.koMore}</div>` : ''}
+    <div class="vd-hand" style="text-align:center;font-size:30px;font-weight:700;color:var(--accent-soft);margin:16px 0 4px;word-break:keep-all;">${w.ko}</div>
+    ${w.koMore ? `<div class="vd-hand" style="text-align:center;font-size:19px;color:var(--ink-soft);margin-bottom:8px;">${w.koMore}</div>` : ''}
     ${w.nuance ? `
       <div style="margin-top:10px;background:var(--accent-wash);border-radius:8px;padding:10px 12px;">
         <div style="font-size:12px;font-weight:700;color:var(--accent-strong);margin-bottom:4px;">🎭 이런 상황·느낌의 단어예요</div>
@@ -513,10 +514,10 @@ function renderVocabDeckFullscreen() {
     <div style="position:fixed;inset:0;background:var(--paper);z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;" onclick="vocabdeckRandomNext()">
       <button onclick="event.stopPropagation();vocabdeckToggleRandom()" style="position:absolute;top:20px;right:20px;width:44px;height:44px;border-radius:50%;background:var(--surface-alt);color:var(--ink);border:none;font-size:20px;cursor:pointer;">✕</button>
       <div style="position:absolute;top:24px;left:20px;font-size:13px;color:var(--muted);font-weight:700;">${statusText} · 화면 탭하면 다음 단어</div>
-      <div style="font-family:var(--font-display);font-size:44px;font-weight:700;color:var(--ink);line-height:1.2;word-break:break-word;">${w.word}</div>
+      <div class="vd-hand" style="font-size:48px;font-weight:700;color:var(--ink);line-height:1.2;word-break:break-word;">${w.word}</div>
       <div style="font-size:18px;color:var(--accent-strong);font-weight:600;margin-top:10px;">${vocabdeckPron(w)}</div>
-      <div style="font-size:34px;font-weight:700;color:var(--accent-soft);margin-top:40px;word-break:keep-all;">${w.ko}</div>
-      ${w.koMore ? `<div style="font-size:18px;color:var(--ink-soft);margin-top:10px;word-break:keep-all;">${w.koMore}</div>` : ''}
+      <div class="vd-hand" style="font-size:38px;font-weight:700;color:var(--accent-soft);margin-top:40px;word-break:keep-all;">${w.ko}</div>
+      ${w.koMore ? `<div class="vd-hand" style="font-size:21px;color:var(--ink-soft);margin-top:10px;word-break:keep-all;">${w.koMore}</div>` : ''}
       <button onclick="event.stopPropagation();${pauseAction}" style="position:absolute;bottom:40px;width:64px;height:64px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;">${pauseIcon}</button>
     </div>`;
 }
