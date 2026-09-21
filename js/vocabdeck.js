@@ -14,6 +14,12 @@ let vocabdeckReviewQuiz = null;
 let vocabdeckRandomOpen = false;
 let vocabdeckRandomWord = null;
 
+// 예전에 만든 DAY에는 AI가 넣은 **강조** 기호가 그대로 저장돼 있어서, 불러올 때 한 번 정리해서 다시 저장
+if ((localStorage.getItem('vocabdeck_days') || '').includes('**')) {
+  vocabdeckDays = vocabdeckStripMarkdown(vocabdeckDays);
+  localStorage.setItem('vocabdeck_days', JSON.stringify(vocabdeckDays));
+}
+
 function vocabdeckStatus(day) {
   if (day <= vocabdeckCompleted) return 'done';
   if (day === vocabdeckCompleted + 1) return 'current';
@@ -390,6 +396,17 @@ function vocabdeckWordCard(day, content, wordIdx) {
       <button class="step-nav-btn" style="flex:0 0 auto;padding-left:14px;padding-right:14px;" onclick="event.stopPropagation();vocabdeckRevealAll(${day},${wordIdx})">전부 보기</button>
     </div>` : '';
 
+  if (lv === 0) {
+    return `
+      <div style="min-height:50vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 0;">
+        <div style="font-size:15px;color:var(--muted);font-weight:700;margin-bottom:16px;">${wordIdx + 1} / ${content.words.length} · 💭 뜻이 뭘까? 먼저 떠올려 보세요</div>
+        <div class="vd-hand" style="font-size:56px;font-weight:700;color:var(--ink);line-height:1.15;word-break:break-word;">${w.word}</div>
+        <div style="font-size:19px;color:var(--accent-strong);font-weight:600;margin-top:12px;">${vocabdeckPron(w)} <span style="font-size:14px;color:var(--muted);">(${w.pos})</span></div>
+        <button class="spk-btn" style="margin-top:22px;font-size:26px;padding:10px 24px;" onclick="event.stopPropagation();vocabdeckSpeakWord(${day},${wordIdx})">🔊</button>
+      </div>
+      ${revealButtons}`;
+  }
+
   return `
     <div class="card">
       <div class="card-header">
@@ -545,26 +562,53 @@ function vocabdeckSection(day) {
       </div>`;
   }
 
+  return '';
+}
+
+// 학습 단계(오늘의 단어 → 단어 카드들 → 완료)는 목록 위에 전체화면으로 띄운다
+function renderVocabDeckStudy() {
+  const el = document.getElementById('vocabdeck-study');
+  if (!el) return;
+  const day = vocabdeckOpen;
+  const content = day && vocabdeckDays[day];
+  if (!content) { el.innerHTML = ''; return; }
+
   const steps = vocabdeckStepDefs(content);
   const idx = Math.max(0, Math.min(vocabdeckStepIdx, steps.length - 1));
   const step = steps[idx];
   const dots = steps.map((s, i) => `<div class="step-dot${i < idx ? ' done' : i === idx ? ' on' : ''}"></div>`).join('');
 
-  return `
-    <div style="margin-top:12px;" onclick="event.stopPropagation();">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-        <div class="step-label" style="margin-bottom:0;">${idx + 1} / ${steps.length}단계 · ${step.emoji} ${step.label}</div>
-        <button id="vocabdeck-regen-btn-${day}" onclick="vocabdeckGenerate(${day})" style="font-size:11px;font-weight:700;color:var(--muted);background:none;border:none;cursor:pointer;padding:4px 0;">🔄 다시 만들기</button>
+  el.innerHTML = `
+    <div style="position:fixed;inset:0;z-index:9997;display:flex;flex-direction:column;background:var(--paper);">
+      <div style="flex:0 0 auto;width:100%;max-width:560px;margin:0 auto;padding:14px 16px 4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div class="step-label" style="margin:0;text-align:left;font-size:14px;">DAY ${day} · ${idx + 1} / ${steps.length}단계</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button id="vocabdeck-regen-btn-${day}" onclick="vocabdeckGenerate(${day})" style="font-size:12px;font-weight:700;color:var(--muted);background:none;border:none;cursor:pointer;padding:6px 0;">🔄 다시 만들기</button>
+            <button onclick="vocabdeckToggle(${day})" style="width:42px;height:42px;border-radius:50%;background:var(--surface-alt);color:var(--ink);border:none;font-size:20px;cursor:pointer;">✕</button>
+          </div>
+        </div>
+        <div class="step-track" style="margin-top:10px;margin-bottom:6px;">${dots}</div>
+        <div id="vocabdeck-err-${day}"></div>
       </div>
-      <div class="step-track">${dots}</div>
-      ${vocabdeckRenderStepCard(day, content, step)}
-      <div id="vocabdeck-err-${day}"></div>
+      <div style="flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;width:100%;max-width:560px;margin:0 auto;padding:0 16px 12px;">
+        ${vocabdeckRenderStepCard(day, content, step)}
+      </div>
       ${step.key !== 'done' ? `
-        <div class="step-nav">
-          <button class="step-nav-btn" ${idx === 0 ? 'disabled' : ''} onclick="vocabdeckGoStep(-1)">← 이전</button>
-          <button class="step-nav-btn primary" onclick="vocabdeckGoStep(1)">다음 →</button>
+        <div style="flex:0 0 auto;width:100%;max-width:560px;margin:0 auto;padding:10px 16px calc(14px + env(safe-area-inset-bottom));">
+          <div class="step-nav" style="margin-top:0;">
+            <button class="step-nav-btn" ${idx === 0 ? 'disabled' : ''} onclick="vocabdeckGoStep(-1)">← 이전</button>
+            <button class="step-nav-btn primary" onclick="vocabdeckGoStep(1)">다음 →</button>
+          </div>
         </div>` : ''}
     </div>`;
+}
+
+// 다른 탭으로 나갈 때 전체화면이 남아있지 않게 정리
+function vocabdeckCloseOverlays() {
+  if (vocabdeckOpen !== null && vocabdeckDays[vocabdeckOpen]) vocabdeckOpen = null;
+  if (vocabdeckRandomOpen) vocabdeckToggleRandom();
+  renderVocabDeck();
 }
 
 function renderVocabDeck() {
@@ -609,4 +653,5 @@ function renderVocabDeck() {
   }
 
   el.innerHTML = header + rows.join('');
+  renderVocabDeckStudy();
 }

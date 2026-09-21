@@ -447,8 +447,8 @@ body {
 .hl-en { background: rgba(250,204,21,0.28); color: #FEF08A; text-decoration-color: #FACC15; }
 .hl-ko { background: rgba(249,115,22,0.30); color: #FDBA74; text-decoration-color: #F97316; }
 
-/* ── 어휘 탭 노트 테마: 줄공책 종이 + 손글씨 (이 탭 안에서만 색 토큰을 덮어써서 다른 탭은 그대로) ── */
-#tab-vocabdeck, #vocabdeck-fullscreen {
+/* ── 어휘 탭 노트 테마: 크림색 종이 + 손글씨 (이 탭 안에서만 색 토큰을 덮어써서 다른 탭은 그대로) ── */
+#tab-vocabdeck, #vocabdeck-fullscreen, #vocabdeck-study {
   --paper: #FFFEF6;
   --surface: #FFFBEA;
   --surface-alt: #F4EEDA;
@@ -466,25 +466,21 @@ body {
   --danger: #BE123C; --danger-wash: rgba(190,18,60,0.10);
   --warning: #B45309; --warning-wash: rgba(245,158,11,0.18);
   --vd-hand: 'Hi Melody', 'Malgun Gothic', cursive;
+  color: var(--ink);
   font-size-adjust: 0.5;
 }
-#tab-vocabdeck {
-  color: var(--ink);
-  border-radius: 14px; padding: 14px 12px 20px;
-  background-color: var(--paper);
-  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 31px, rgba(90,120,170,0.20) 31px, rgba(90,120,170,0.20) 32px);
-}
-#tab-vocabdeck .card { background: transparent; border: none; box-shadow: none; padding: 6px 2px; }
-#tab-vocabdeck .card-header { border-bottom: 2px dashed var(--line); }
-#tab-vocabdeck .card-title { font-family: var(--vd-hand); font-size: 23px; word-break: keep-all; }
-#tab-vocabdeck .pattern-ex-en { font-family: var(--vd-hand); font-size: 20px; }
-#tab-vocabdeck .pattern-ex-ko { font-family: var(--vd-hand); font-size: 18px; }
-#tab-vocabdeck .vd-hand, #vocabdeck-fullscreen .vd-hand { font-family: var(--vd-hand); }
-#tab-vocabdeck .hl-en { background: rgba(250,204,21,0.55); color: #2D2400; text-decoration-color: #CA8A04; }
-#tab-vocabdeck .hl-ko { background: rgba(251,146,60,0.42); color: #4A1D00; text-decoration-color: #EA580C; }
-#vocabdeck-fullscreen > div {
-  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 39px, rgba(90,120,170,0.18) 39px, rgba(90,120,170,0.18) 40px) !important;
-}
+#tab-vocabdeck { border-radius: 14px; padding: 14px 12px 20px; background-color: var(--paper); }
+#tab-vocabdeck .card, #vocabdeck-study .card { background: transparent; border: none; box-shadow: none; padding: 6px 2px; }
+#tab-vocabdeck .card-header, #vocabdeck-study .card-header { border-bottom: 2px dashed var(--line); }
+#tab-vocabdeck .card-title, #vocabdeck-study .card-title { font-family: var(--vd-hand); font-size: 23px; word-break: keep-all; }
+#vocabdeck-study .card-title { font-size: 30px; }
+#tab-vocabdeck .pattern-ex-en, #vocabdeck-study .pattern-ex-en { font-family: var(--vd-hand); font-size: 20px; }
+#tab-vocabdeck .pattern-ex-ko, #vocabdeck-study .pattern-ex-ko { font-family: var(--vd-hand); font-size: 18px; }
+#vocabdeck-study .pattern-ex-en { font-size: 23px; }
+#vocabdeck-study .pattern-ex-ko { font-size: 20px; }
+#tab-vocabdeck .vd-hand, #vocabdeck-fullscreen .vd-hand, #vocabdeck-study .vd-hand { font-family: var(--vd-hand); }
+#tab-vocabdeck .hl-en, #vocabdeck-study .hl-en { background: rgba(250,204,21,0.55); color: #2D2400; text-decoration-color: #CA8A04; }
+#tab-vocabdeck .hl-ko, #vocabdeck-study .hl-ko { background: rgba(251,146,60,0.42); color: #4A1D00; text-decoration-color: #EA580C; }
 
 /* ── Step flow (단계별 학습) ── */
 .step-track { display: flex; gap: 5px; margin-bottom: 14px; }

@@ -244,6 +244,7 @@ function switchDashboard(name, _isInitial) {
 }
 
 function switchTab(name, skipHistory) {
+  if (name !== 'vocabdeck' && typeof vocabdeckCloseOverlays === 'function') vocabdeckCloseOverlays();
   TAB_NAMES.forEach(t => {
     document.getElementById('tab-' + t).classList.add('hidden');
   });
