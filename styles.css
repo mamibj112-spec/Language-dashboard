@@ -1,26 +1,26 @@
 :root {
-  --paper: #1C1023;
-  --surface: #2B1830;
-  --surface-alt: #241528;
-  --ink: #FDF4F5;
-  --ink-soft: #E8D5E3;
-  --muted: #B79AB0;
-  --line: rgba(255,255,255,0.12);
-  --line-soft: rgba(255,255,255,0.08);
-  --accent: #F59E0B;
-  --accent-strong: #D97706;
-  --accent-soft: #FBBF24;
-  --accent-wash: rgba(245,158,11,0.14);
-  --accent-wash-strong: rgba(245,158,11,0.22);
-  --success: #34D399;
-  --success-wash: rgba(52,211,153,0.14);
-  --danger: #FB7185;
-  --danger-wash: rgba(251,113,133,0.14);
-  --warning: #FBBF24;
-  --warning-wash: rgba(251,191,36,0.14);
-  --highlight-ink: #FDE68A;
-  --highlight-wash: rgba(253,230,138,0.12);
-  --highlight-line: rgba(253,230,138,0.28);
+  --paper: #FFFEF6;
+  --surface: #FFFBEA;
+  --surface-alt: #F4EEDA;
+  --ink: #22202A;
+  --ink-soft: #2F2B38;
+  --muted: #4B4655;
+  --line: rgba(70,80,120,0.22);
+  --line-soft: rgba(70,80,120,0.14);
+  --accent: #D46A00;
+  --accent-strong: #9A4A05;
+  --accent-soft: #C2410C;
+  --accent-wash: rgba(245,158,11,0.16);
+  --accent-wash-strong: rgba(245,158,11,0.28);
+  --success: #166534;
+  --success-wash: rgba(21,128,61,0.12);
+  --danger: #BE123C;
+  --danger-wash: rgba(190,18,60,0.10);
+  --warning: #92400E;
+  --warning-wash: rgba(245,158,11,0.18);
+  --highlight-ink: #4A1D00;
+  --highlight-wash: rgba(251,146,60,0.16);
+  --highlight-line: rgba(234,88,12,0.35);
   --font-display: 'Jua', sans-serif;
   --font-body: 'IBM Plex Sans KR', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
 }
@@ -444,8 +444,8 @@ body {
   font-weight: 700; border-radius: 4px; padding: 0 3px;
   text-decoration: underline; text-underline-offset: 3px;
 }
-.hl-en { background: rgba(250,204,21,0.28); color: #FEF08A; text-decoration-color: #FACC15; }
-.hl-ko { background: rgba(249,115,22,0.30); color: #FDBA74; text-decoration-color: #F97316; }
+.hl-en { background: rgba(250,204,21,0.55); color: #2D2400; text-decoration-color: #CA8A04; }
+.hl-ko { background: rgba(251,146,60,0.42); color: #4A1D00; text-decoration-color: #EA580C; }
 
 /* ── 어휘 탭 노트 테마: 크림색 종이 + 손글씨 (이 탭 안에서만 색 토큰을 덮어써서 다른 탭은 그대로) ── */
 #tab-vocabdeck, #vocabdeck-fullscreen, #vocabdeck-study {
