@@ -453,18 +453,18 @@ body {
   --surface: #FFFBEA;
   --surface-alt: #F4EEDA;
   --ink: #22202A;
-  --ink-soft: #46414F;
-  --muted: #6E6778;
+  --ink-soft: #2F2B38;
+  --muted: #4B4655;
   --line: rgba(70,80,120,0.22);
   --line-soft: rgba(70,80,120,0.14);
   --accent: #D46A00;
-  --accent-strong: #B45309;
+  --accent-strong: #9A4A05;
   --accent-soft: #C2410C;
   --accent-wash: rgba(245,158,11,0.16);
   --accent-wash-strong: rgba(245,158,11,0.28);
-  --success: #15803D; --success-wash: rgba(21,128,61,0.12);
+  --success: #166534; --success-wash: rgba(21,128,61,0.12);
   --danger: #BE123C; --danger-wash: rgba(190,18,60,0.10);
-  --warning: #B45309; --warning-wash: rgba(245,158,11,0.18);
+  --warning: #92400E; --warning-wash: rgba(245,158,11,0.18);
   --vd-hand: 'IBM Plex Sans KR', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
   color: var(--ink);
 }
