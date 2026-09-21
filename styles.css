@@ -465,19 +465,18 @@ body {
   --success: #15803D; --success-wash: rgba(21,128,61,0.12);
   --danger: #BE123C; --danger-wash: rgba(190,18,60,0.10);
   --warning: #B45309; --warning-wash: rgba(245,158,11,0.18);
-  --vd-hand: 'Hi Melody', 'Malgun Gothic', cursive;
+  --vd-hand: 'IBM Plex Sans KR', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
   color: var(--ink);
-  font-size-adjust: 0.5;
 }
 #tab-vocabdeck { border-radius: 14px; padding: 14px 12px 20px; background-color: var(--paper); }
 #tab-vocabdeck .card, #vocabdeck-study .card { background: transparent; border: none; box-shadow: none; padding: 6px 2px; }
 #tab-vocabdeck .card-header, #vocabdeck-study .card-header { border-bottom: 2px dashed var(--line); }
-#tab-vocabdeck .card-title, #vocabdeck-study .card-title { font-family: var(--vd-hand); font-size: 23px; word-break: keep-all; }
-#vocabdeck-study .card-title { font-size: 30px; }
-#tab-vocabdeck .pattern-ex-en, #vocabdeck-study .pattern-ex-en { font-family: var(--vd-hand); font-size: 20px; }
-#tab-vocabdeck .pattern-ex-ko, #vocabdeck-study .pattern-ex-ko { font-family: var(--vd-hand); font-size: 18px; }
-#vocabdeck-study .pattern-ex-en { font-size: 23px; }
-#vocabdeck-study .pattern-ex-ko { font-size: 20px; }
+#tab-vocabdeck .card-title, #vocabdeck-study .card-title { font-family: var(--vd-hand); font-size: 20px; word-break: keep-all; }
+#vocabdeck-study .card-title { font-size: 26px; }
+#tab-vocabdeck .pattern-ex-en, #vocabdeck-study .pattern-ex-en { font-family: var(--vd-hand); font-size: 17px; }
+#tab-vocabdeck .pattern-ex-ko, #vocabdeck-study .pattern-ex-ko { font-family: var(--vd-hand); font-size: 15px; }
+#vocabdeck-study .pattern-ex-en { font-size: 20px; }
+#vocabdeck-study .pattern-ex-ko { font-size: 17px; }
 #tab-vocabdeck .vd-hand, #vocabdeck-fullscreen .vd-hand, #vocabdeck-study .vd-hand { font-family: var(--vd-hand); }
 #tab-vocabdeck .hl-en, #vocabdeck-study .hl-en { background: rgba(250,204,21,0.55); color: #2D2400; text-decoration-color: #CA8A04; }
 #tab-vocabdeck .hl-ko, #vocabdeck-study .hl-ko { background: rgba(251,146,60,0.42); color: #4A1D00; text-decoration-color: #EA580C; }
