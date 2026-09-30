@@ -61,7 +61,14 @@ const VOCABDECK_JSON_SPEC = `{
         "koMatch": "example.ko 안에서 이 단어의 뜻에 해당하는 부분을 글자 그대로 (예: 딜레마). 정확히 대응하는 부분이 없으면 빈 문자열",
         "glossary": [{"phrase": "예문 속에 나온, 메인 단어 말고 학습자가 모를 수 있는 다른 단어/숙어/구동사 원형", "ko": "그 뜻"}] (0~3개, 실제로 어려운 게 있을 때만 - 쉬운 예문이면 빈 배열)
       },
-      "note": "이 예문에서 학습자가 따로 공부해두면 좋은 포인트 - 문법 포인트, 헷갈리기 쉬운 부분, 함께 자주 쓰이는 전치사/표현 등 (2~3문장)"
+      "example2": {
+        "en": "친구·동료·가족과 대화하거나 가게·회사·여행 같은 일상 상황에서 실제로 말할 법한 구어체 예문 1문장 (뉴스 예문과 다른 상황, 너무 딱딱하지 않게)",
+        "ko": "예문의 자연스러운 한국어 구어체 번역",
+        "enMatch": "example2.en 안에서 이 단어가 실제로 쓰인 형태를 글자 그대로",
+        "koMatch": "example2.ko 안에서 이 단어의 뜻에 해당하는 부분을 글자 그대로. 정확히 대응하는 부분이 없으면 빈 문자열",
+        "glossary": [{"phrase": "이 예문 속 다른 어려운 단어/숙어/구동사 원형", "ko": "그 뜻"}] (0~3개, 없으면 빈 배열)
+      },
+      "note": "두 예문에서 학습자가 따로 공부해두면 좋은 포인트 - 문법 포인트, 헷갈리기 쉬운 부분, 함께 자주 쓰이는 전치사/표현 등 (2~3문장)"
     }
   ] (8개, 서로 다른 단어)
 }`;
@@ -74,7 +81,7 @@ function vocabdeckPrompt(day, avoidWords) {
 아래 단어들은 이미 이전 DAY에서 다뤘으니 절대 중복해서 고르지 마세요:
 ${avoidWords.length ? avoidWords.join(', ') : '(아직 없음)'}
 
-각 단어마다 뜻만 딱 주지 말고, 그 단어가 실제 문장 속에서 어떻게 쓰이는지 보여주는 예문을 반드시 함께 만들어주세요. 예문은 뉴스 기사에 나올 법한 문체로 쓰되, 실제 기사를 인용하는 게 아니라 직접 지어서 쓴 문장이어야 하고, 특정 언론사 이름이나 출처는 절대 언급하지 마세요. enMatch와 koMatch는 반드시 각각 예문(en/ko) 안에 글자 그대로 존재하는 부분이어야 해요. 강조용 별표(**) 같은 마크다운 기호는 어떤 항목에도 절대 쓰지 마세요 (화면에 그대로 찍혀요). 예문 안에 메인 단어 말고도 학습자가 모를 수 있는 단어나 숙어, 구동사가 있으면 절대 그냥 넘어가지 말고 따로 뽑아서 뜻을 설명해주세요. 그리고 그 예문을 통해 학습자가 무엇을 추가로 공부해두면 좋을지(문법, 뉘앙스, 자주 같이 쓰이는 표현 등)도 짚어주세요. 발음기호(IPA)도 정확하게 붙여주고, IPA를 못 읽는 학습자를 위해 빠르게 읽을 수 있는 한글 표기 발음도 참고용으로 함께 달아주세요 (정확한 원어민 발음은 음성 재생 버튼으로 확인하게 될 거라, 한글 표기는 완벽함보다 읽기 편함이 우선이에요).
+각 단어마다 뜻만 딱 주지 말고, 그 단어가 실제 문장 속에서 어떻게 쓰이는지 보여주는 예문을 반드시 함께 만들어주세요. 예문은 뉴스 기사에 나올 법한 문체로 쓰되, 실제 기사를 인용하는 게 아니라 직접 지어서 쓴 문장이어야 하고, 특정 언론사 이름이나 출처는 절대 언급하지 마세요. 그리고 뉴스 예문과 별도로, 같은 단어를 실생활 회화에서 실제로 말하는 구어체 예문(example2)도 하나 더 만들어주세요 - 친구와의 대화, 회사, 가게, 여행 등 뉴스 예문과는 다른 일상 상황이어야 해요. enMatch와 koMatch는 반드시 각각 해당 예문(en/ko) 안에 글자 그대로 존재하는 부분이어야 해요. 강조용 별표(**) 같은 마크다운 기호는 어떤 항목에도 절대 쓰지 마세요 (화면에 그대로 찍혀요). 예문 안에 메인 단어 말고도 학습자가 모를 수 있는 단어나 숙어, 구동사가 있으면 절대 그냥 넘어가지 말고 따로 뽑아서 뜻을 설명해주세요. 그리고 그 예문을 통해 학습자가 무엇을 추가로 공부해두면 좋을지(문법, 뉘앙스, 자주 같이 쓰이는 표현 등)도 짚어주세요. 발음기호(IPA)도 정확하게 붙여주고, IPA를 못 읽는 학습자를 위해 빠르게 읽을 수 있는 한글 표기 발음도 참고용으로 함께 달아주세요 (정확한 원어민 발음은 음성 재생 버튼으로 확인하게 될 거라, 한글 표기는 완벽함보다 읽기 편함이 우선이에요).
 
 다음 JSON 형식으로만 답하세요 (다른 설명 없이 JSON만):
 ${VOCABDECK_JSON_SPEC}`;
@@ -127,10 +134,11 @@ function vocabdeckPron(w) {
   return ipa + kopron;
 }
 
-function vocabdeckSpeak(day, wordIdx) {
+function vocabdeckSpeak(day, wordIdx, key) {
   const d = vocabdeckDays[day];
   const w = d && d.words[wordIdx];
-  if (w) speak(w.example.en);
+  const ex = w && w[key || 'example'];
+  if (ex) speak(ex.en);
 }
 
 function vocabdeckSpeakWord(day, wordIdx) {
@@ -352,12 +360,28 @@ function vocabdeckIntroCard(day, content) {
     </div>`;
 }
 
+// 예문 한 개(뉴스 예문 / 실생활 회화 예문) - 예전에 만든 DAY엔 example2가 없어서 그땐 아무것도 안 그림
+function vocabdeckExampleHtml(day, wordIdx, w, key, label) {
+  const ex = w[key];
+  if (!ex || !ex.en) return '';
+  const enHtml = vocabdeckHighlight(ex.en, ex.enMatch || w.word, 'hl-en');
+  const koHtml = vocabdeckHighlight(ex.ko, ex.koMatch, 'hl-ko');
+  return `
+    <div style="font-size:12px;font-weight:700;color:var(--muted);margin:14px 0 6px;">${label}</div>
+    <div class="pattern-ex">
+      <div class="pattern-ex-en"><span>${enHtml}</span> <button class="spk-btn" onclick="event.stopPropagation();vocabdeckSpeak(${day},${wordIdx},'${key}')">🔊</button></div>
+      <div class="pattern-ex-ko">${koHtml}</div>
+    </div>
+    ${ex.glossary && ex.glossary.length ? `
+      <div style="margin-top:10px;background:var(--accent-wash);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--accent-strong);margin-bottom:6px;">📚 예문 속 다른 단어·표현</div>
+        ${ex.glossary.map(g => `<div style="display:flex;gap:6px;font-size:13px;margin-bottom:3px;"><span style="font-weight:700;color:var(--ink);">${g.phrase}</span><span style="color:var(--ink-soft);">– ${g.ko}</span></div>`).join('')}
+      </div>` : ''}`;
+}
+
 function vocabdeckWordCard(day, content, wordIdx) {
   const w = content.words[wordIdx];
   const lv = vocabdeckRevealLevel(day, wordIdx);
-  const ex = w.example || {};
-  const enHtml = vocabdeckHighlight(ex.en, ex.enMatch || w.word, 'hl-en');
-  const koHtml = vocabdeckHighlight(ex.ko, ex.koMatch, 'hl-ko');
 
   const meaningBlock = lv >= 1 ? `
     <div class="vd-hand" style="text-align:center;font-size:27px;font-weight:700;color:var(--accent-soft);margin:16px 0 4px;word-break:keep-all;">${w.ko}</div>
@@ -374,19 +398,11 @@ function vocabdeckWordCard(day, content, wordIdx) {
       </div>` : ''}` : '';
 
   const exampleBlock = lv >= 2 ? `
-    <div style="font-size:12px;font-weight:700;color:var(--muted);margin:14px 0 6px;">📰 예문 (AI가 쓴 뉴스 문체)</div>
-    <div class="pattern-ex">
-      <div class="pattern-ex-en"><span>${enHtml}</span> <button class="spk-btn" onclick="event.stopPropagation();vocabdeckSpeak(${day},${wordIdx})">🔊</button></div>
-      <div class="pattern-ex-ko">${koHtml}</div>
-    </div>
-    ${ex.glossary && ex.glossary.length ? `
-      <div style="margin-top:10px;background:var(--accent-wash);border-radius:8px;padding:10px 12px;">
-        <div style="font-size:12px;font-weight:700;color:var(--accent-strong);margin-bottom:6px;">📚 예문 속 다른 단어·표현</div>
-        ${ex.glossary.map(g => `<div style="display:flex;gap:6px;font-size:13px;margin-bottom:3px;"><span style="font-weight:700;color:var(--ink);">${g.phrase}</span><span style="color:var(--ink-soft);">– ${g.ko}</span></div>`).join('')}
-      </div>` : ''}
+    ${vocabdeckExampleHtml(day, wordIdx, w, 'example', '📰 뉴스 예문 (AI가 쓴 뉴스 문체)')}
+    ${vocabdeckExampleHtml(day, wordIdx, w, 'example2', '💬 실생활 회화 예문')}
     ${w.note ? `
       <div style="margin-top:10px;background:var(--warning-wash);border-left:3px solid var(--warning);border-radius:0 8px 8px 0;padding:10px 12px;">
-        <div style="font-size:12px;font-weight:700;color:var(--warning);margin-bottom:4px;">📝 이 예문에서 꼭 봐두세요</div>
+        <div style="font-size:12px;font-weight:700;color:var(--warning);margin-bottom:4px;">📝 예문에서 꼭 봐두세요</div>
         <div style="font-size:13px;line-height:1.6;color:var(--ink-soft);">${w.note}</div>
       </div>` : ''}` : '';
 
