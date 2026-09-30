@@ -476,6 +476,11 @@ body {
 #tab-vocabdeck .pattern-ex-en, #vocabdeck-study .pattern-ex-en { font-family: var(--vd-hand); font-size: 17px; }
 #tab-vocabdeck .pattern-ex-ko, #vocabdeck-study .pattern-ex-ko { font-family: var(--vd-hand); font-size: 15px; }
 #vocabdeck-study .pattern-ex-en { font-size: 20px; }
+/* 예문 스피커: 옆에 따로 칸을 차지하지 않고 문장 끝에 작게 붙임 */
+#tab-vocabdeck .pattern-ex-en, #vocabdeck-study .pattern-ex-en { display: block; }
+#tab-vocabdeck .pattern-ex-en .spk-btn, #vocabdeck-study .pattern-ex-en .spk-btn {
+  font-size: 13px; padding: 0 6px; line-height: 1.5; margin-left: 2px; vertical-align: middle; border-radius: 6px;
+}
 #vocabdeck-study .pattern-ex-ko { font-size: 17px; }
 #tab-vocabdeck .vd-hand, #vocabdeck-fullscreen .vd-hand, #vocabdeck-study .vd-hand { font-family: var(--vd-hand); }
 #tab-vocabdeck .hl-en, #vocabdeck-study .hl-en { background: rgba(250,204,21,0.55); color: #2D2400; text-decoration-color: #CA8A04; }
