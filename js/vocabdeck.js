@@ -341,6 +341,12 @@ function vocabdeckToggleRandom() {
   renderVocabDeck();
 }
 
+// 오늘의 단어 목록에서 줄을 누르면 뜻을 보였다 숨겼다 (다시 그리지 않아서 스크롤이 튀지 않음)
+function vocabdeckToggleIntroMeaning(row) {
+  const ko = row.querySelector('.vd-intro-ko');
+  if (ko) ko.style.display = ko.style.display === 'none' ? 'block' : 'none';
+}
+
 function vocabdeckIntroCard(day, content) {
   return `
     <div class="card">
@@ -351,11 +357,13 @@ function vocabdeckIntroCard(day, content) {
           <div class="card-sub">🔥 연속 ${vocabdeckStreak}일째 학습 중</div>
         </div>
       </div>
-      <div style="font-size:13px;line-height:1.7;color:var(--ink-soft);margin-bottom:12px;">단어만 먼저 보고 뜻을 떠올려 본 다음, 한 단계씩 눌러서 확인해요.</div>
+      <div style="font-size:13px;line-height:1.7;color:var(--ink-soft);margin-bottom:12px;">단어만 먼저 보고 뜻을 떠올려 본 다음, 한 단계씩 눌러서 확인해요. 👆 단어를 누르면 뜻이 바로 보여요.</div>
       ${content.words.map((w, i) => `
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <div style="display:flex;gap:8px;margin-bottom:10px;cursor:pointer;" onclick="vocabdeckToggleIntroMeaning(this)">
           <span style="color:var(--accent);font-weight:700;flex-shrink:0;">${i + 1}.</span>
-          <div class="vd-hand" style="min-width:0;color:var(--ink);font-weight:600;font-size:18px;">${w.word} <span style="color:var(--muted);font-weight:500;font-size:12px;">${vocabdeckPron(w)}</span></div>
+          <div class="vd-hand" style="min-width:0;color:var(--ink);font-weight:600;font-size:18px;">${w.word} <span style="color:var(--muted);font-weight:500;font-size:12px;">${vocabdeckPron(w)}</span>
+            <div class="vd-intro-ko" style="display:none;font-size:16px;font-weight:700;color:var(--accent-soft);margin-top:2px;">${w.ko}</div>
+          </div>
         </div>`).join('')}
     </div>`;
 }
