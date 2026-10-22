@@ -111,7 +111,7 @@ function setOpicLevel(lv) {
 function renderOpicLevelTabs() {
   const el = document.getElementById('opic-level-tabs');
   if (!el) return;
-  el.innerHTML = OPIC_LEVELS.map(lv => `<button class="tab-btn${lv === opicTargetLevel ? ' active' : ''}" onclick="setOpicLevel('${lv}')" style="flex:none;padding:6px 14px;">${lv}</button>`).join('');
+  el.innerHTML = OPIC_LEVELS.map(lv => `<button class="tab-btn${lv === opicTargetLevel ? ' active' : ''}" onclick="setOpicLevel('${lv}')" style="flex:1 1 0;min-width:0;padding:8px 0;">${lv}</button>`).join('');
 }
 
 function setOpicStage(id) {
@@ -491,20 +491,43 @@ function toggleOpicMemDone() {
   renderOpicMemorize();
 }
 
+// 정리 화면의 🔊 버튼들이 읽을 문장 (따옴표가 섞여도 안전하게 번호로 참조)
+let opicStudySpeakTexts = [];
+
+// 예문 한 줄: 영어(🔊) + 한국어 해석
+function opicStudyExampleHtml(ex, label) {
+  if (!ex || !ex.en) return '';
+  const i = opicStudySpeakTexts.push(ex.en) - 1;
+  return `
+    <div style="margin-top:6px;padding:8px 10px;border-radius:8px;background:var(--accent-wash);">
+      ${label ? `<div style="font-size:13px;color:var(--accent-strong);font-weight:700;margin-bottom:2px;">${label}</div>` : ''}
+      <div style="font-size:15px;font-weight:600;color:var(--ink);line-height:1.6;">${ex.en} <button class="spk-btn" style="font-size:13px;padding:0 6px;vertical-align:middle;" onclick="speak(opicStudySpeakTexts[${i}])">🔊</button></div>
+      ${ex.ko ? `<div style="font-size:14px;color:var(--ink-soft);line-height:1.6;">${ex.ko}</div>` : ''}
+    </div>`;
+}
+
 function renderOpicStudyPoints(item) {
   if (item.studyPoints) {
     const sp = item.studyPoints;
+    opicStudySpeakTexts = [];
     const section = (emoji, title, color, lines) => !lines || !lines.length ? '' : `
       <div style="padding:12px;border-radius:12px;background:var(--surface-alt);border:1px solid var(--line-soft);margin-bottom:8px;">
         <div style="font-size:14px;color:${color};font-weight:600;margin-bottom:8px;">${emoji} ${title}</div>
         <ul style="margin:0;padding-left:18px;font-size:15px;line-height:1.8;color:var(--ink-soft);">
-          ${lines.map(l => `<li>${l}</li>`).join('')}
+          ${lines.map(l => `<li style="margin-bottom:8px;">${l}</li>`).join('')}
         </ul>
       </div>`;
+    // 예전에 정리한 자료는 만능 답변이 문장(문자열)만 있고 예시가 없어서 둘 다 처리
+    const allPurpose = (sp.allPurpose || []).map(a => typeof a === 'string' ? a : `
+      <b>${a.sentence}</b>${a.ko ? ` — ${a.ko}` : ''}
+      ${opicStudyExampleHtml(a.example, a.useIn ? `💡 이렇게 응용해요: ${a.useIn}` : '💡 이렇게 응용해요')}`);
+    const hasExamples = (sp.grammar || []).some(g => g.example) || (sp.allPurpose || []).some(a => typeof a !== 'string');
     return `
       ${section('💬', '핵심 표현·숙어', 'var(--warning)', (sp.expressions || []).map(e => `<b>${e.phrase}</b> — ${e.meaning}`))}
-      ${section('📐', '문법 포인트', 'var(--accent)', (sp.grammar || []).map(g => `<b>${g.point}</b> — ${g.desc}`))}
-      ${section('🧰', '만능 답변 (다른 문제에도 활용 가능)', 'var(--accent-strong)', sp.allPurpose || [])}
+      ${section('📐', '문법 포인트', 'var(--accent)', (sp.grammar || []).map(g => `<b>${g.point}</b> — ${g.desc}${opicStudyExampleHtml(g.example, '✏️ 예문')}`))}
+      ${section('🧰', '만능 답변 (다른 문제에도 활용 가능)', 'var(--accent-strong)', allPurpose)}
+      <button class="complete-btn" id="opic-study-btn" onclick="loadOpicStudyPoints(${opicMemTopicIdx},${opicMemItemIdx})" style="background:var(--surface-alt);color:var(--ink);">🔄 ${hasExamples ? '다시 정리하기' : '예시 포함해서 다시 정리하기'}</button>
+      <div id="opic-study-result"></div>
     `;
   }
   return `<button class="complete-btn" id="opic-study-btn" onclick="loadOpicStudyPoints(${opicMemTopicIdx},${opicMemItemIdx})" style="background:var(--accent);">📌 핵심 표현·문법·만능 답변 정리 보기</button>
@@ -518,6 +541,7 @@ async function loadOpicStudyPoints(topicIdx, itemIdx) {
   const btn = document.getElementById('opic-study-btn');
   if (!geminiApiKey) { resultEl.innerHTML = `<div style="margin-top:10px;color:var(--warning);">⚙️ API 키가 없어요!</div>`; return; }
 
+  const originalText = btn.textContent;
   btn.disabled = true;
   btn.textContent = '⏳ 정리하는 중...';
 
@@ -529,13 +553,14 @@ async function loadOpicStudyPoints(topicIdx, itemIdx) {
 이 스크립트를 학습하는 사람을 위해 아래 형식의 JSON으로만 정리해주세요 (다른 설명 없이 JSON만):
 {
   "expressions": [{"phrase": "핵심 표현/숙어", "meaning": "뜻과 간단한 사용법"}],
-  "grammar": [{"point": "문법 포인트 이름", "desc": "설명"}],
-  "allPurpose": ["다른 오픽 문제에도 그대로 쓸 수 있는 만능 문장1", "만능 문장2"]
+  "grammar": [{"point": "문법 포인트 이름", "desc": "설명", "example": {"en": "이 문법을 쓴 새 영어 예문 1문장 (스크립트 문장 그대로 말고, 오픽 답변에 쓸 법한 다른 문장)", "ko": "예문 번역"}}],
+  "allPurpose": [{"sentence": "다른 오픽 문제에도 그대로 쓸 수 있는 만능 문장 (영어)", "ko": "뜻", "useIn": "이 문장을 써먹을 수 있는 다른 오픽 질문 예 (한국어로 짧게, 예: 좋아하는 카페 묘사)", "example": {"en": "그 질문 답변에 이 만능 문장을 실제로 응용한 영어 문장", "ko": "번역"}}]
 }
 
 조건:
 - expressions는 2~4개, grammar는 1~3개, allPurpose는 2~3개
-- 모두 한국어로 쉽게 설명, ${opicTargetLevel} 학습자 눈높이`;
+- 모두 한국어로 쉽게 설명, ${opicTargetLevel} 학습자 눈높이
+- 강조용 별표(**) 같은 마크다운 기호는 쓰지 마세요`;
 
   try {
     item.studyPoints = await geminiJSON(prompt);
@@ -544,7 +569,7 @@ async function loadOpicStudyPoints(topicIdx, itemIdx) {
   } catch (err) {
     resultEl.innerHTML = `<div style="margin-top:10px;color:var(--danger);">❌ ${err.message}</div>`;
     btn.disabled = false;
-    btn.textContent = '📌 핵심 표현·문법·만능 답변 정리 보기';
+    btn.textContent = originalText;
   }
 }
 
