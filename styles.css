@@ -486,6 +486,25 @@ body {
 #tab-vocabdeck .hl-en, #vocabdeck-study .hl-en { background: rgba(250,204,21,0.55); color: #2D2400; text-decoration-color: #CA8A04; }
 #tab-vocabdeck .hl-ko, #vocabdeck-study .hl-ko { background: rgba(251,146,60,0.42); color: #4A1D00; text-decoration-color: #EA580C; }
 
+/* ── 오픽 스크립트 암기: 질문을 눈에 띄게 ── */
+.opic-q-item {
+  display: block; width: 100%; text-align: left; padding: 13px 14px;
+  border-radius: 10px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--ink); font-family: var(--font-body); font-size: 16px; font-weight: 600;
+  line-height: 1.5; cursor: pointer; word-break: keep-all;
+}
+.opic-q-item:active { background: var(--accent-wash); }
+.opic-q-box {
+  background: var(--accent-wash); border-left: 4px solid var(--accent);
+  border-radius: 0 10px 10px 0; padding: 12px 14px; margin-bottom: 14px;
+}
+.opic-q-label {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 14px; font-weight: 700; color: var(--accent-strong); margin-bottom: 8px;
+}
+.opic-q-en { font-size: 18px; font-weight: 600; line-height: 1.6; color: var(--ink); }
+.opic-q-ko { font-size: 16px; line-height: 1.6; color: var(--ink-soft); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+
 /* ── Step flow (단계별 학습) ── */
 .step-track { display: flex; gap: 5px; margin-bottom: 14px; }
 .step-dot { flex: 1; height: 5px; border-radius: 99px; background: var(--line); }

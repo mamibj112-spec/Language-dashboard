@@ -177,6 +177,13 @@ function toggleOpicAP(key) {
 }
 
 // ── 오픽 스크립트 암기 (내 스크립트 자료 기반) ──
+// 지금 보고 있는 질문을 영어로 읽어주기 (질문 문장에 따옴표가 섞여 있어도 안전하게 데이터에서 직접 꺼냄)
+function opicSpeakMemQuestion() {
+  const data = getOpicMemData();
+  const item = data && data[opicMemTopicIdx] && data[opicMemTopicIdx].items[opicMemItemIdx];
+  if (item && item.q_en) speak(item.q_en.replace(/<[^>]*>/g, ''));
+}
+
 const OPIC_MEM_CATEGORIES = [
   { id: 'survey', label: '📋 설문조사 (14주제)', dataName: 'OPIC_SCRIPT_DATA' },
   { id: 'twist', label: '⚡ 돌발 (17주제)', dataName: 'OPIC_TWIST_DATA' },
@@ -412,7 +419,7 @@ function renderOpicMemorize() {
       <div style="font-weight:700;margin-bottom:8px;">${topic.fullTitle}</div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${topic.items.map((it, i) => `
-          <button class="tab-btn" onclick="opicMemItemIdx=${i};opicMemRevealed=false;renderOpicMemorize()" style="text-align:left;${it.en_script ? '' : 'opacity:0.5;'}">${it.done ? '✅ ' : ''}${i + 1}. ${it.title}${it.en_script ? '' : ' (스크립트 없음)'}</button>
+          <button class="opic-q-item" onclick="opicMemItemIdx=${i};opicMemRevealed=false;renderOpicMemorize()" style="${it.en_script ? '' : 'opacity:0.6;'}">${it.done ? '✅ ' : ''}${i + 1}. ${it.title}${it.en_script ? '' : ' (스크립트 없음)'}</button>
         `).join('')}
       </div>`;
     return;
@@ -432,8 +439,11 @@ function renderOpicMemorize() {
     <div class="card">
       <div style="font-size:14px;color:var(--muted);margin-bottom:4px;">${topic.topic} · ${opicMemItemIdx + 1}/${topic.items.length}</div>
       <div style="font-weight:700;font-size:17px;margin-bottom:8px;">${item.title}</div>
-      <div style="color:var(--ink-soft);font-size:15px;margin-bottom:4px;">${item.q_en}</div>
-      <div style="color:var(--muted);font-size:15px;margin-bottom:14px;">${item.q_ko}</div>
+      <div class="opic-q-box">
+        <div class="opic-q-label">❓ 질문 <button class="spk-btn" onclick="opicSpeakMemQuestion()">🔊 영어로 듣기</button></div>
+        <div class="opic-q-en">${item.q_en}</div>
+        <div class="opic-q-ko">${item.q_ko}</div>
+      </div>
       ${item.en_script ? `
         <div style="padding:12px;border-radius:12px;background:var(--surface-alt);border:1px solid var(--line-soft);margin-bottom:10px;">
           <div style="font-size:14px;color:var(--accent-strong);font-weight:600;margin-bottom:8px;">🇰🇷 한국어 스크립트 (이걸 보고 영어로 떠올려보세요)</div>
