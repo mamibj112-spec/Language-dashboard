@@ -251,129 +251,41 @@ function formatScriptHtml(text) {
   }).join('');
 }
 
-// ── 오픽 말하기 연습: 마이크로 직접 말해보고 모범답안과 비교 ──
-let opicSpeakingKey = null;
-let opicSpeakingTranscript = '';
-let opicSpeakingActive = false;
-let opicRecognition = null;
-
-function getOpicRecognition() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return null;
-  if (opicRecognition) return opicRecognition;
-  opicRecognition = new SR();
-  opicRecognition.lang = 'en-US';
-  opicRecognition.interimResults = true;
-  opicRecognition.continuous = false;
-  opicRecognition.onresult = (e) => {
-    let text = '';
-    for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
-    opicSpeakingTranscript = text;
-    const el = document.getElementById('opic-speaking-transcript');
-    if (el) el.textContent = opicSpeakingTranscript;
-  };
-  opicRecognition.onend = () => { opicSpeakingActive = false; renderOpicMemorize(); };
-  opicRecognition.onerror = (e) => {
-    opicSpeakingActive = false;
-    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-      alert('마이크 권한이 필요해요. 브라우저 설정에서 마이크 접근을 허용해주세요.');
-    }
-    renderOpicMemorize();
-  };
-  return opicRecognition;
+// ── 정답 스크립트 읽어주기 ──
+// 스크립트 자료에는 영어 문장 사이에 <IL> 같은 등급 태그, "[   ] is ~: 내가 ~" 같은 한국어 학습 메모,
+// 이메일·주소, (대체 표현) 등이 섞여 있어서 그대로 읽으면 이상하다. 영어 문장만 골라낸다.
+function opicCleanScriptForSpeech(text) {
+  if (!text) return '';
+  const t = text
+    .replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;[^&]*&gt;/g, ' ')
+    .replace(/<[^>]*>/g, ' ')                       // <IL>, <IM1/IM2> 등급 태그
+    .replace(/\S+@\S+\.\S+/g, ' ')                  // 이메일
+    .replace(/https?:\/\/\S+/g, ' ')                // 주소
+    .replace(/\([^)]*\)/g, ' ')                     // (대체 표현) 괄호 메모
+    .replace(/\[\s*script\s*\]/gi, ' ')             // [Script] 라벨
+    .replace(/\[\s*([^\]]*?)\s*\]/g, (m, inner) => inner || '@@BLANK@@'); // [ Yesterday ] -> Yesterday, [   ] 빈칸은 메모 표시
+  // 문장 단위로 자르기 (줄바꿈도 문장 경계로 취급)
+  const kept = [];
+  for (let seg of t.split(/\n+|(?<=[.!?])\s+/)) {
+    // 한국어가 섞인 조각은 "영어 표현: 한국어 뜻 + 이어지는 영어 문장" 형태라, 마지막 한글 뒤쪽 영어만 남김
+    let lastKo = -1;
+    for (let i = 0; i < seg.length; i++) if (/[\u3131-\uD79D]/.test(seg[i])) lastKo = i;
+    if (lastKo >= 0) seg = seg.slice(lastKo + 1);
+    seg = seg.replace(/^[\s:=.,;"'\-→]+/, '').replace(/\s+/g, ' ').trim();
+    if (!seg) continue;
+    if (/@@BLANK@@|~|=|→/.test(seg)) continue;      // 문형 메모 (예: "I like ~ = I love ~")
+    if (/^P\d+\.?$/.test(seg)) continue;            // P12. 같은 페이지 번호
+    if (!/[A-Za-z]{2,}/.test(seg)) continue;
+    kept.push(seg);
+  }
+  return kept.join(' ');
 }
 
-function toggleOpicSpeaking() {
-  if (isNativeApp()) { toggleOpicSpeakingNative(); return; }
-  const r = getOpicRecognition();
-  if (!r) {
-    alert('이 브라우저/앱에서는 음성 인식을 지원하지 않아요. PC나 모바일 Chrome 브라우저에서 이용해주세요.');
-    return;
-  }
-  if (opicSpeakingActive) {
-    r.stop();
-    opicSpeakingActive = false;
-  } else {
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
-    opicSpeakingTranscript = '';
-    try { r.start(); opicSpeakingActive = true; } catch { opicSpeakingActive = false; }
-  }
-  renderOpicMemorize();
-}
-
-async function toggleOpicSpeakingNative() {
-  const SpeechRecognition = window.Capacitor.Plugins.SpeechRecognition;
-  if (opicSpeakingActive) {
-    try { await SpeechRecognition.stop(); } catch {}
-    opicSpeakingActive = false;
-    renderOpicMemorize();
-    return;
-  }
-  try {
-    let perm = await SpeechRecognition.checkPermissions();
-    if (perm.speechRecognition !== 'granted') perm = await SpeechRecognition.requestPermissions();
-    if (perm.speechRecognition !== 'granted') {
-      alert('마이크 권한이 필요해요. 폰 설정 > 앱 > 공부대시보드 > 권한에서 마이크를 허용해주세요.');
-      return;
-    }
-  } catch (e) {
-    alert('음성 인식을 사용할 수 없어요: ' + e.message);
-    return;
-  }
-
-  opicSpeakingTranscript = '';
-  opicSpeakingActive = true;
-  renderOpicMemorize();
-
-  SpeechRecognition.removeAllListeners();
-  SpeechRecognition.addListener('partialResults', (data) => {
-    if (data.matches && data.matches.length) {
-      opicSpeakingTranscript = data.matches[0];
-      const el = document.getElementById('opic-speaking-transcript');
-      if (el) el.textContent = opicSpeakingTranscript;
-    }
-  });
-
-  try {
-    const result = await SpeechRecognition.start({ language: 'en-US', partialResults: true, popup: false });
-    if (result && result.matches && result.matches.length) opicSpeakingTranscript = result.matches[0];
-  } catch (e) {
-    // 중간에 멈췄거나 인식 실패 - partialResults로 잡힌 텍스트를 그대로 사용
-  }
-
-  opicSpeakingActive = false;
-  renderOpicMemorize();
-}
-
-async function compareOpicSpeaking(modelScript) {
-  const resultEl = document.getElementById('opic-compare-result');
-  const btn = document.getElementById('opic-compare-btn');
-  if (!geminiApiKey) { resultEl.innerHTML = `<div style="margin-top:10px;color:var(--warning);">⚙️ API 키가 없어요! 오른쪽 상단 ⚙️ 버튼을 눌러 Gemini API 키를 입력해 주세요.</div>`; return; }
-
-  btn.disabled = true;
-  btn.textContent = '⏳ 분석 중...';
-
-  const prompt = `당신은 OPIc 스피킹 코치입니다. 학습자가 아래 모범답안을 참고용으로 두고 직접 말한 내용을 비교해서 한국어로 피드백을 주세요.
-
-[모범답안]
-${modelScript}
-
-[학습자가 실제로 말한 내용 (음성인식 텍스트라 오타/누락이 있을 수 있음을 감안)]
-${opicSpeakingTranscript}
-
-아래 형식으로 짧고 친절하게 작성하세요:
-✅ 잘한 점
-⚠️ 놓친 내용이나 문법 실수
-💬 다음엔 이렇게 말해보세요 (구체적인 문장 제안 1~2개)`;
-
-  try {
-    const feedback = await geminiText(prompt, 'You are an encouraging OPIc speaking coach. Reply in Korean only.');
-    resultEl.innerHTML = `<div class="feedback-card" style="margin-top:10px;">${feedback}</div>`;
-  } catch (err) {
-    resultEl.innerHTML = `<div style="margin-top:10px;color:var(--danger);">❌ ${err.message}</div>`;
-  }
-  btn.disabled = false;
-  btn.textContent = '✨ AI로 비교 분석';
+function opicSpeakMemScript() {
+  const data = getOpicMemData();
+  const item = data && data[opicMemTopicIdx] && data[opicMemTopicIdx].items[opicMemItemIdx];
+  const text = item && opicCleanScriptForSpeech(item.en_script);
+  if (text) speak(text);
 }
 
 function renderOpicMemorize() {
@@ -427,13 +339,6 @@ function renderOpicMemorize() {
 
   const item = topic.items[opicMemItemIdx];
 
-  const speakingKey = opicMemCategory + '-' + opicMemTopicIdx + '-' + opicMemItemIdx;
-  if (speakingKey !== opicSpeakingKey) {
-    opicSpeakingKey = speakingKey;
-    opicSpeakingTranscript = '';
-    opicSpeakingActive = false;
-  }
-
   contentEl.innerHTML = `
     <button class="tab-btn" onclick="opicMemItemIdx=null;renderOpicMemorize()" style="margin-bottom:10px;">← ${topic.topic} 목록</button>
     <div class="card">
@@ -451,21 +356,12 @@ function renderOpicMemorize() {
         </div>
         ${opicMemRevealed ? `
           <div style="padding:12px;border-radius:12px;background:rgba(21,128,61,0.08);border:1px solid rgba(21,128,61,0.25);">
-            <div style="font-size:14px;color:var(--success);font-weight:600;margin-bottom:8px;">🇺🇸 정답 스크립트 <button class="spk-btn" onclick="speak('${item.en_script.replace(/&lt;[^&]*&gt;|<[^>]*>/g,'').replace(/'/g,"\\'")}')">🔊</button></div>
+            <div style="font-size:14px;color:var(--success);font-weight:600;margin-bottom:8px;">🇺🇸 정답 스크립트 <button class="spk-btn" onclick="opicSpeakMemScript()">🔊 영어로 듣기</button></div>
             <div style="font-size:16px;line-height:1.8;" class="script-text">${formatScriptHtml(item.en_script)}</div>
           </div>
           <button class="complete-btn" onclick="opicMemRevealed=false;renderOpicMemorize()" style="margin-top:10px;background:var(--surface-alt);">🙈 다시 가리기</button>
           <button class="complete-btn ${item.done ? 'done' : ''}" onclick="toggleOpicMemDone()" style="margin-top:10px;${item.done ? '' : 'background:var(--accent-strong);'}">${item.done ? '✅ 외웠어요 (취소하려면 클릭)' : '☑️ 외웠어요 체크'}</button>
           <div id="opic-study-points" style="margin-top:10px;">${renderOpicStudyPoints(item)}</div>
-          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft);">
-            <div style="font-size:14px;color:var(--muted);font-weight:600;margin-bottom:8px;">🎤 내 답변 말해보기 (모범답안 보지 말고 말해보세요)</div>
-            <button class="mic-btn${opicSpeakingActive ? ' recording' : ''}" id="opic-mic-btn" onclick="toggleOpicSpeaking()" style="width:100%;">${opicSpeakingActive ? '🔴 녹음 중지' : '🎤 눌러서 말하기'}</button>
-            <div id="opic-speaking-transcript" style="margin-top:8px;font-size:15px;color:var(--ink-soft);min-height:20px;">${opicSpeakingTranscript}</div>
-            ${opicSpeakingTranscript && !opicSpeakingActive ? `
-              <button class="complete-btn" id="opic-compare-btn" onclick='compareOpicSpeaking(${JSON.stringify(item.en_script.replace(/&lt;[^&]*&gt;|<[^>]*>/g,''))})' style="margin-top:8px;background:var(--accent);">✨ AI로 비교 분석</button>
-              <div id="opic-compare-result"></div>
-            ` : ''}
-          </div>
         ` : `
           <button class="complete-btn" onclick="opicMemRevealed=true;renderOpicMemorize()">👀 영어 스크립트 보기</button>
         `}
