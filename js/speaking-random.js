@@ -120,7 +120,7 @@ function renderSpeakingRandom() {
   const p = speakingRandomPhase;
   const status = speakingRandomPaused ? '⏸ 일시정지됨' : '🔁 자동 재생 중';
   let answer;
-  if (p === 'en') answer = `<div class="sp-drill-en" style="font-size:27px;">${speakingChunkHtml(it.en)}</div>`;
+  if (p === 'en') answer = `<div class="sp-drill-en" style="font-size:27px;">${speakingChunkHtml(it.en)}</div><div class="sp-drill-hint" style="margin-top:0;font-size:17px;">└ ${it.keyKo} ${it.key}</div>`;
   else if (p === 'think' && !speakingRandomPaused) answer = `<div class="sp-drill-left" id="sp-random-left">${speakingRandomLeft}</div><div class="sp-sub">영어로 말해보세요</div>`;
   else answer = `<div class="sp-sub" style="font-size:17px;">💭 잘 듣고 영어로 떠올려보세요</div>`;
 
@@ -130,7 +130,6 @@ function renderSpeakingRandom() {
       <div style="position:absolute;top:24px;left:20px;right:76px;text-align:left;font-size:13px;color:var(--muted);font-weight:700;">${status} · 화면 탭하면 다음 문장</div>
       <div style="font-size:14px;font-weight:700;color:var(--accent-strong);">DAY ${it.day} · ${SPEAKING_TOPICS[it.day - 1] ? SPEAKING_TOPICS[it.day - 1].ko : ''}</div>
       <div class="sp-drill-ko" style="font-size:30px;">${it.ko}</div>
-      <div class="sp-drill-hint" style="font-size:17px;">└ ${it.keyKo} ${it.key}</div>
       <div class="sp-drill-answer" style="min-height:150px;">${answer}</div>
       <button onclick="event.stopPropagation();${speakingRandomPaused ? 'speakingRandomResume()' : 'speakingRandomPause()'}" style="position:absolute;bottom:40px;width:64px;height:64px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;">${speakingRandomPaused ? '▶️' : '⏸'}</button>
     </div>`;

@@ -42,12 +42,12 @@ function speakingRenderStep(step, content) {
     case 'in1': return speakingIn1(content);
     case 'in2': return speakingIn2(content);
     case 'in3': return speakingIn3(content);
-    case 'in4': return speakingStepHead('📥 인풋', 'STEP 4 · 혼자 말하기', '한국어와 힌트만 보고 3초 안에 영어로 말해보세요. ▶ 자동 진행을 누르면 3초 뒤 정답을 읽어주고 다음 문장으로 넘어가요.') + speakingDrillHtml();
+    case 'in4': return speakingStepHead('📥 인풋', 'STEP 4 · 혼자 말하기', '한국어만 보고 3초 안에 영어로 말해보세요. ▶ 자동 진행을 누르면 3초 뒤 정답과 핵심 표현을 보여주고 읽어준 다음, 다음 문장으로 넘어가요.') + speakingDrillHtml();
     case 'out1': return speakingOut1(content);
     case 'out2': return speakingOut2(content);
     case 'out3': return speakingOut3(content);
     case 'out4': return speakingOut4(content);
-    case 'chkDrill': return speakingStepHead('📝 중간점검', '5초 안에 말해보기', '두 DAY의 표현을 섞은 문장이에요. 한국어와 힌트를 보고 5초 안에 영어로 말해보세요.') + speakingDrillHtml();
+    case 'chkDrill': return speakingStepHead('📝 중간점검', '5초 안에 말해보기', '두 DAY의 표현을 섞은 문장이에요. 한국어만 보고 5초 안에 영어로 말해보세요.') + speakingDrillHtml();
     default: return speakingCurrent().isCheck ? speakingCheckDoneCard(content) : speakingDoneCard(content);
   }
 }
@@ -182,6 +182,7 @@ function speakingDrillHtml() {
   let answer;
   if (d.phase === 'answer') {
     answer = `<div class="sp-drill-en">${speakingChunkHtml(it.en)}</div>
+      <div class="sp-drill-hint" style="margin-top:0;">└ ${it.hint}</div>
       <button class="spk-btn" style="font-size:22px;padding:8px 20px;" onclick="speakingDrillSay()">🔊</button>`;
   } else if (d.auto) {
     answer = `<div class="sp-drill-left" id="sp-drill-left">${d.left}</div><div class="sp-sub">초 안에 영어로 말해보세요</div>`;
@@ -193,7 +194,6 @@ function speakingDrillHtml() {
     <div class="sp-drill">
       <div class="sp-drill-top">${d.idx + 1} / ${items.length}${it.tag ? ` · ${it.tag}` : ''}</div>
       <div class="sp-drill-ko">${it.ko}</div>
-      <div class="sp-drill-hint">└ ${it.hint}</div>
       <div class="sp-drill-answer">${answer}</div>
       ${d.finished ? '<div style="font-size:16px;font-weight:700;color:var(--success);margin-top:8px;">🎉 끝까지 다 했어요! 아래 다음 → 으로 넘어가세요</div>' : ''}
     </div>
