@@ -159,7 +159,7 @@ async function speakNative(text, lang) {
 }
 
 // ── Tab switch ──
-const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','review','ppt','opic','notes','companyDash','companyAsk','lesson96','vocabdeck'];
+const TAB_NAMES = ['dialogue','phrases','vocab','role','quiz','pattern','review','ppt','opic','notes','companyDash','companyAsk','lesson96','vocabdeck','speaking'];
 const DASHBOARDS = {
   lesson96: {
     label: '📺 96강',
@@ -173,6 +173,13 @@ const DASHBOARDS = {
     title: '단어+예문 통암기 어휘장',
     tabs: [
       { id: 'vocabdeck', label: '📚 어휘' },
+    ],
+  },
+  speaking: {
+    label: '🗣 스피킹',
+    title: '매일 1분 스피킹',
+    tabs: [
+      { id: 'speaking', label: '🗣 스피킹' },
     ],
   },
   english: {
@@ -245,6 +252,7 @@ function switchDashboard(name, _isInitial) {
 
 function switchTab(name, skipHistory) {
   if (name !== 'vocabdeck' && typeof vocabdeckCloseOverlays === 'function') vocabdeckCloseOverlays();
+  if (name !== 'speaking' && typeof speakingCloseOverlays === 'function') speakingCloseOverlays();
   TAB_NAMES.forEach(t => {
     document.getElementById('tab-' + t).classList.add('hidden');
   });
@@ -281,6 +289,9 @@ function switchTab(name, skipHistory) {
   }
   if (name === 'vocabdeck') {
     renderVocabDeck();
+  }
+  if (name === 'speaking') {
+    renderSpeaking();
   }
   if (!skipHistory) pushHistoryState();
 }

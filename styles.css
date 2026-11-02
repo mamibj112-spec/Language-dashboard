@@ -505,6 +505,48 @@ body {
 .opic-q-en { font-size: 18px; font-weight: 600; line-height: 1.6; color: var(--ink); }
 .opic-q-ko { font-size: 16px; line-height: 1.6; color: var(--ink-soft); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
 
+/* ── 스피킹 탭 ── */
+.sp-chunk { color: var(--accent); font-weight: 800; margin: 0 1px; }
+.sp-step-head { font-size: 14px; font-weight: 700; color: var(--accent-strong); letter-spacing: 0.04em; margin-top: 6px; }
+.sp-step-title { font-family: var(--font-display); font-size: 24px; color: var(--ink); line-height: 1.35; margin: 2px 0 8px; word-break: keep-all; }
+.sp-guide {
+  font-size: 15px; line-height: 1.65; color: var(--ink-soft); word-break: keep-all;
+  background: var(--surface-alt); border-radius: 10px; padding: 11px 13px; margin-bottom: 12px;
+}
+.sp-flow { display: flex; flex-direction: column; gap: 8px; }
+.sp-flow-group {
+  font-size: 15px; line-height: 1.65; color: var(--ink-soft); word-break: keep-all;
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: var(--surface);
+}
+.sp-flow-title { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.sp-row { display: flex; gap: 10px; align-items: flex-start; padding: 13px 2px; border-bottom: 1px solid var(--line-soft); }
+.sp-num { flex: 0 0 24px; font-size: 14px; font-weight: 700; color: var(--accent); padding-top: 4px; font-variant-numeric: tabular-nums; }
+.sp-row-main { flex: 1; min-width: 0; }
+.sp-en { font-size: 19px; font-weight: 600; color: var(--ink); line-height: 1.5; }
+.sp-ko { font-size: 18px; font-weight: 600; color: var(--ink); line-height: 1.5; word-break: keep-all; }
+.sp-sub { font-size: 15px; color: var(--ink-soft); margin-top: 3px; line-height: 1.55; word-break: keep-all; }
+.sp-key { font-size: 15px; color: var(--accent-strong); margin-top: 4px; word-break: keep-all; }
+.sp-spk { flex: 0 0 auto; font-size: 16px; padding: 4px 9px; }
+.sp-rep-boxes { display: flex; gap: 8px; margin-top: 9px; }
+.sp-rep-box {
+  width: 38px; height: 38px; border-radius: 9px; border: 2px solid var(--line);
+  background: var(--surface); color: #fff; font-size: 19px; font-weight: 800; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.sp-rep-box.on { background: var(--success); border-color: var(--success); }
+.sp-paragraph { font-size: 19px; line-height: 2; color: var(--ink); }
+.sp-blank { white-space: nowrap; color: var(--accent); font-weight: 800; letter-spacing: 1px; cursor: pointer; border-radius: 4px; padding: 0 2px; background: var(--accent-wash); }
+.sp-blank-open { cursor: pointer; }
+.sp-story-ko { font-size: 18px; line-height: 1.9; color: var(--ink); word-break: keep-all; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.sp-timer { font-size: 60px; font-weight: 800; color: var(--accent); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.sp-drill { text-align: center; padding: 16px 6px 8px; min-height: 44vh; display: flex; flex-direction: column; justify-content: center; }
+.sp-drill-top { font-size: 15px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sp-drill-ko { font-size: 27px; font-weight: 700; color: var(--ink); line-height: 1.45; margin-top: 16px; word-break: keep-all; }
+.sp-drill-hint { font-size: 16px; color: var(--accent-strong); margin-top: 10px; word-break: keep-all; }
+.sp-drill-answer { margin-top: 24px; min-height: 130px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+.sp-drill-left { font-size: 72px; font-weight: 800; color: var(--accent); line-height: 1; font-variant-numeric: tabular-nums; }
+.sp-drill-en { font-size: 24px; font-weight: 700; color: var(--ink); line-height: 1.5; }
+
 /* ── Step flow (단계별 학습) ── */
 .step-track { display: flex; gap: 5px; margin-bottom: 14px; }
 .step-dot { flex: 1; height: 5px; border-radius: 99px; background: var(--line); }

@@ -4,15 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>영어 공부 대시보드</title>
-<script src="config.js?v=20261023c"></script>
+<script src="config.js?v=20261102b"></script>
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
-<script src="opic-script-data.js?v=20261023c"></script>
-<script src="opic-twist-data.js?v=20261023c"></script>
-<script src="opic-role-data.js?v=20261023c"></script>
+<script src="opic-script-data.js?v=20261102b"></script>
+<script src="opic-twist-data.js?v=20261102b"></script>
+<script src="opic-role-data.js?v=20261102b"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="styles.css?v=20261023c">
+<link rel="stylesheet" href="styles.css?v=20261102b">
 </head>
 <body>
 <button class="settings-btn" onclick="openSettings()">⚙️</button>
@@ -40,12 +40,13 @@
 
   <!-- Dashboard Switcher -->
   <div class="tabs" id="dashboard-switcher" style="margin-bottom:8px;">
-    <button class="tab-btn" id="dash-btn-english" onclick="switchDashboard('english')" style="flex:1 1 30%;">💬 영어회화</button>
-    <button class="tab-btn" id="dash-btn-opic" onclick="switchDashboard('opic')" style="flex:1 1 30%;">🎤 오픽</button>
-    <button class="tab-btn" id="dash-btn-vocab" onclick="switchDashboard('vocab')" style="flex:1 1 30%;">📖 단어</button>
-    <button class="tab-btn" id="dash-btn-vocabdeck" onclick="switchDashboard('vocabdeck')" style="flex:1 1 30%;">📚 어휘</button>
-    <button class="tab-btn" id="dash-btn-company" onclick="switchDashboard('company')" style="flex:1 1 30%;">💼 회사</button>
-    <button class="tab-btn" id="dash-btn-lesson96" onclick="switchDashboard('lesson96')" style="flex:1 1 30%;">📺 96강</button>
+    <button class="tab-btn" id="dash-btn-english" onclick="switchDashboard('english')" style="flex:1 1 22%;">💬 영어회화</button>
+    <button class="tab-btn" id="dash-btn-opic" onclick="switchDashboard('opic')" style="flex:1 1 22%;">🎤 오픽</button>
+    <button class="tab-btn" id="dash-btn-vocab" onclick="switchDashboard('vocab')" style="flex:1 1 22%;">📖 단어</button>
+    <button class="tab-btn" id="dash-btn-vocabdeck" onclick="switchDashboard('vocabdeck')" style="flex:1 1 22%;">📚 어휘</button>
+    <button class="tab-btn" id="dash-btn-company" onclick="switchDashboard('company')" style="flex:1 1 22%;">💼 회사</button>
+    <button class="tab-btn" id="dash-btn-lesson96" onclick="switchDashboard('lesson96')" style="flex:1 1 22%;">📺 96강</button>
+    <button class="tab-btn" id="dash-btn-speaking" onclick="switchDashboard('speaking')" style="flex:1 1 22%;">🗣 스피킹</button>
   </div>
 
   <!-- Tabs -->
@@ -252,6 +253,11 @@
     <div id="vocabdeck-content"></div>
   </div>
 
+  <!-- ── 스피킹 Tab (매일 1분 말하기: 인풋 → 아웃풋) ── -->
+  <div id="tab-speaking" class="hidden">
+    <div id="speaking-content"></div>
+  </div>
+
   <!-- ── 질문하기(NotebookLM 스타일 채팅) Tab ── -->
   <div id="tab-companyAsk" class="hidden">
     <div class="card">
@@ -283,19 +289,22 @@
 <!-- ── 어휘 랜덤 복습 전체화면 ── -->
 <div id="vocabdeck-fullscreen"></div>
 <div id="vocabdeck-study"></div>
+<div id="speaking-study"></div>
 
 <!-- ── 기능별 모듈 (로드 순서 중요: data → api → core → 각 탭) ── -->
-<script src="js/data.js?v=20261023c"></script>
-<script src="js/api.js?v=20261023c"></script>
-<script src="js/core.js?v=20261023c"></script>
-<script src="js/study.js?v=20261023c"></script>
-<script src="js/roleplay.js?v=20261023c"></script>
-<script src="js/opic.js?v=20261023c"></script>
-<script src="js/notes.js?v=20261023c"></script>
-<script src="js/ppt.js?v=20261023c"></script>
-<script src="js/lesson96-data.js?v=20261023c"></script>
-<script src="js/lesson96.js?v=20261023c"></script>
-<script src="js/vocabdeck.js?v=20261023c"></script>
+<script src="js/data.js?v=20261102b"></script>
+<script src="js/api.js?v=20261102b"></script>
+<script src="js/core.js?v=20261102b"></script>
+<script src="js/study.js?v=20261102b"></script>
+<script src="js/roleplay.js?v=20261102b"></script>
+<script src="js/opic.js?v=20261102b"></script>
+<script src="js/notes.js?v=20261102b"></script>
+<script src="js/ppt.js?v=20261102b"></script>
+<script src="js/lesson96-data.js?v=20261102b"></script>
+<script src="js/lesson96.js?v=20261102b"></script>
+<script src="js/vocabdeck.js?v=20261102b"></script>
+<script src="js/speaking.js?v=20261102b"></script>
+<script src="js/speaking-steps.js?v=20261102b"></script>
 <script>init();</script>
 </body>
 </html>
