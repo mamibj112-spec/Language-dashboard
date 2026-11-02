@@ -28,6 +28,8 @@ function vocabdeckStatus(day) {
 
 function vocabdeckToggle(day) {
   if (vocabdeckStatus(day) === 'locked') return;
+  // 전체화면 학습을 닫는 경우는 뒤로가기 기록까지 함께 정리
+  if (vocabdeckOpen === day && vocabdeckDays[day]) { overlayClose('vocabStudy'); return; }
   const opening = vocabdeckOpen !== day;
   vocabdeckOpen = opening ? day : null;
   if (opening) {
@@ -189,6 +191,11 @@ function vocabdeckComplete(day) {
     localStorage.setItem('vocabdeck_lastDate', vocabdeckLastDate);
   }
 
+  overlayClose('vocabStudy');
+}
+
+function vocabdeckCloseStudyUI() {
+  if (vocabdeckOpen === null || !vocabdeckDays[vocabdeckOpen]) return;
   vocabdeckOpen = null;
   vocabdeckStepIdx = 0;
   renderVocabDeck();
@@ -327,19 +334,27 @@ function vocabdeckRandomResume() {
 }
 
 function vocabdeckToggleRandom() {
-  vocabdeckRandomOpen = !vocabdeckRandomOpen;
-  if (vocabdeckRandomTimer) { clearTimeout(vocabdeckRandomTimer); vocabdeckRandomTimer = null; }
-  if (vocabdeckRandomOpen) {
-    vocabdeckRandomNext();
-  } else {
-    vocabdeckRandomWord = null;
-    vocabdeckRandomPaused = false;
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
-    if (_audio) { _audio.pause(); }
-    renderVocabDeckFullscreen();
-  }
+  if (vocabdeckRandomOpen) { overlayClose('vocabRandom'); return; }
+  vocabdeckRandomOpen = true;
+  overlayOpened('vocabRandom');
+  vocabdeckRandomNext();
   renderVocabDeck();
 }
+
+function vocabdeckCloseRandomUI() {
+  if (!vocabdeckRandomOpen) return;
+  vocabdeckRandomOpen = false;
+  if (vocabdeckRandomTimer) { clearTimeout(vocabdeckRandomTimer); vocabdeckRandomTimer = null; }
+  vocabdeckRandomWord = null;
+  vocabdeckRandomPaused = false;
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  if (_audio) { _audio.pause(); }
+  renderVocabDeckFullscreen();
+  renderVocabDeck();
+}
+
+registerOverlay('vocabStudy', vocabdeckCloseStudyUI);
+registerOverlay('vocabRandom', vocabdeckCloseRandomUI);
 
 // 오늘의 단어 목록에서 줄을 누르면 뜻을 보였다 숨겼다 (다시 그리지 않아서 스크롤이 튀지 않음)
 function vocabdeckToggleIntroMeaning(row) {
@@ -596,6 +611,7 @@ function renderVocabDeckStudy() {
   const day = vocabdeckOpen;
   const content = day && vocabdeckDays[day];
   if (!content) { el.innerHTML = ''; return; }
+  overlayOpened('vocabStudy');
 
   const steps = vocabdeckStepDefs(content);
   const idx = Math.max(0, Math.min(vocabdeckStepIdx, steps.length - 1));
@@ -631,7 +647,7 @@ function renderVocabDeckStudy() {
 // 다른 탭으로 나갈 때 전체화면이 남아있지 않게 정리
 function vocabdeckCloseOverlays() {
   if (vocabdeckOpen !== null && vocabdeckDays[vocabdeckOpen]) vocabdeckOpen = null;
-  if (vocabdeckRandomOpen) vocabdeckToggleRandom();
+  vocabdeckCloseRandomUI();
   renderVocabDeck();
 }
 

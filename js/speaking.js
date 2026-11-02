@@ -131,6 +131,36 @@ function speakingDayPrompt(day) {
 }`;
 }
 
+async function speakingFetchDay(day) {
+  const content = speakingCleanContent(speakingStripMarkdown(await geminiJSON(speakingDayPrompt(day))));
+  if (!Array.isArray(content.input) || !content.input.length || !content.output || !Array.isArray(content.output.sentences)) {
+    throw new Error('AI 답변 형식이 이상해요. 한 번 더 눌러주세요.');
+  }
+  return content;
+}
+
+function speakingSaveDay(day, content) {
+  speakingDays[day] = content;
+  localStorage.setItem('speaking_days', JSON.stringify(speakingDays));
+  Object.keys(speakingReps).forEach(k => { if (k.startsWith(day + '-')) delete speakingReps[k]; });
+  localStorage.setItem('speaking_reps', JSON.stringify(speakingReps));
+}
+
+// ── 다음 DAY 미리 만들어두기: 열 때마다 20~30초 기다리지 않게 뒤에서 조용히 생성 ──
+let speakingPrefetching = {};      // day -> 진행 중인 생성
+let speakingPrefetchFailed = {};   // 이번에 실패한 DAY는 자동으로 다시 시도하지 않음 (버튼으로는 가능)
+
+function speakingPrefetch(day) {
+  if (day < 1 || day > SPEAKING_TOTAL_DAYS || speakingDays[day] || speakingPrefetching[day] || speakingPrefetchFailed[day] || !geminiApiKey) return;
+  speakingPrefetching[day] = speakingFetchDay(day)
+    .then(content => { if (!speakingDays[day]) speakingSaveDay(day, content); })
+    .catch(() => { speakingPrefetchFailed[day] = true; })
+    .finally(() => {
+      delete speakingPrefetching[day];
+      if (currentTabName === 'speaking') renderSpeaking();
+    });
+}
+
 async function speakingGenerate(day) {
   const btn = document.getElementById('speaking-gen-btn-' + day) || document.getElementById('speaking-regen-btn');
   const errEl = document.getElementById('speaking-err-' + day) || document.getElementById('speaking-study-err');
@@ -142,14 +172,12 @@ async function speakingGenerate(day) {
   errEl.innerHTML = '';
 
   try {
-    const content = speakingCleanContent(speakingStripMarkdown(await geminiJSON(speakingDayPrompt(day))));
-    if (!Array.isArray(content.input) || !content.input.length || !content.output || !Array.isArray(content.output.sentences)) {
-      throw new Error('AI 답변 형식이 이상해요. 한 번 더 눌러주세요.');
+    if (speakingPrefetching[day] && !speakingDays[day]) {
+      await speakingPrefetching[day];          // 이미 뒤에서 만드는 중이면 그걸 기다림
+      if (speakingDays[day]) return;           // 성공했으면 prefetch 쪽에서 화면을 다시 그림
     }
-    speakingDays[day] = content;
-    localStorage.setItem('speaking_days', JSON.stringify(speakingDays));
-    Object.keys(speakingReps).forEach(k => { if (k.startsWith(day + '-')) delete speakingReps[k]; });
-    localStorage.setItem('speaking_reps', JSON.stringify(speakingReps));
+    delete speakingPrefetchFailed[day];
+    speakingSaveDay(day, await speakingFetchDay(day));
     speakingStepIdx = 0;
     speakingReveal = {};
     renderSpeaking();
@@ -217,6 +245,8 @@ async function speakingGenerateCheck(throughDay) {
 
 function speakingToggleDay(day) {
   if (speakingStatus(day) === 'locked') return;
+  // 전체화면 학습을 닫는 경우는 뒤로가기 기록까지 함께 정리
+  if (speakingOpenDay === day && speakingDays[day]) { overlayClose('speakingStudy'); return; }
   speakingStopAll();
   speakingOpenCheck = null;
   speakingOpenDay = speakingOpenDay === day ? null : day;
@@ -226,6 +256,7 @@ function speakingToggleDay(day) {
 }
 
 function speakingToggleCheck(throughDay) {
+  if (speakingOpenCheck === throughDay && speakingCheckData[throughDay]) { overlayClose('speakingStudy'); return; }
   speakingStopAll();
   speakingOpenDay = null;
   speakingOpenCheck = speakingOpenCheck === throughDay ? null : throughDay;
@@ -249,13 +280,25 @@ function speakingComplete(day) {
   }
 
   speakingStopAll();
+  speakingPrefetch(day + 1);
+  overlayClose('speakingStudy');
+}
+
+// 뒤로가기·✕로 전체화면 학습 닫기 (이미 닫혀 있으면 아무것도 안 함)
+function speakingCloseStudyUI() {
+  const showing = (speakingOpenDay !== null && speakingDays[speakingOpenDay]) || (speakingOpenCheck !== null && speakingCheckData[speakingOpenCheck]);
+  if (!showing) return;
+  speakingStopAll();
   speakingOpenDay = null;
+  speakingOpenCheck = null;
   speakingStepIdx = 0;
+  speakingReveal = {};
   renderSpeaking();
 }
 
 // 다른 탭으로 나갈 때 전체화면·타이머·음성이 남지 않게 정리
 function speakingCloseOverlays() {
+  speakingCloseRandomUI();
   const wasOpen = speakingOpenDay !== null || speakingOpenCheck !== null;
   if (!wasOpen) return;
   speakingStopAll();
@@ -272,16 +315,23 @@ function speakingDayRow(day) {
   const tagStyle = status === 'done'
     ? 'background:var(--success-wash);color:var(--success);border-color:rgba(21,128,61,0.3);'
     : '';
+  const prefetching = !!speakingPrefetching[day];
   const genBlock = isOpen && !speakingDays[day] ? `
     <div style="margin-top:10px;" onclick="event.stopPropagation();">
-      <button class="complete-btn" id="speaking-gen-btn-${day}" style="background:var(--accent-strong);" onclick="speakingGenerate(${day})">🗣 DAY ${day} 연습 자료 만들기</button>
+      <button class="complete-btn" id="speaking-gen-btn-${day}" style="background:var(--accent-strong);" ${prefetching ? 'disabled' : ''} onclick="speakingGenerate(${day})">${prefetching ? '⏳ 미리 만드는 중이에요... 끝나면 바로 열려요' : `🗣 DAY ${day} 연습 자료 만들기`}</button>
       <div id="speaking-err-${day}"></div>
     </div>` : '';
+  const readyTag = status === 'current' && speakingDays[day] && !isOpen
+    ? '<span style="margin-left:auto;font-size:13px;font-weight:700;color:var(--success);flex-shrink:0;">준비됨</span>'
+    : status === 'current' && prefetching && !isOpen
+      ? '<span style="margin-left:auto;font-size:13px;color:var(--muted);flex-shrink:0;">⏳ 준비 중</span>'
+      : '';
   return `
     <div id="speaking-row-${day}" class="pattern-item${isOpen ? ' open' : ''}" onclick="speakingToggleDay(${day})">
       <div class="pattern-top" style="justify-content:flex-start;">
         <span class="pattern-tag" style="${tagStyle}">${icon} DAY ${day}</span>
         <span style="font-size:16px;font-weight:600;color:var(--ink);word-break:keep-all;">${topic.ko}</span>
+        ${readyTag}
       </div>
       ${genBlock}
     </div>`;
@@ -325,6 +375,7 @@ function renderSpeaking() {
         <span>${speakingCompleted} / ${SPEAKING_TOTAL_DAYS}일 완료</span>
       </div>
       ${allDone ? '<div style="margin-top:10px;font-size:15px;font-weight:700;color:var(--success);">🎉 30일 과정을 모두 끝냈어요! 언제든 다시 열어서 복습할 수 있어요.</div>' : ''}
+      <button class="complete-btn" style="margin-top:12px;background:var(--accent-strong);" onclick="speakingToggleRandom()">🔀 배운 문장 자동 듣기 (한국어 → 영어)</button>
     </div>`;
 
   const maxDay = Math.min(speakingCompleted + 1, SPEAKING_TOTAL_DAYS);
@@ -336,6 +387,8 @@ function renderSpeaking() {
 
   el.innerHTML = header + rows.join('');
   renderSpeakingStudy();
+  renderSpeakingRandom();
+  speakingPrefetch(speakingCompleted + 1);   // 오늘 할 DAY가 아직 없으면 미리 만들어두기
 }
 
 // 학습 단계는 목록 위에 전체화면으로 띄운다 (어휘 탭과 같은 방식)
@@ -346,6 +399,7 @@ function renderSpeakingStudy() {
   const isCheck = speakingOpenCheck !== null;
   const content = isCheck ? speakingCheckData[speakingOpenCheck] : (speakingOpenDay !== null && speakingDays[speakingOpenDay]);
   if (!content) { el.innerHTML = ''; return; }
+  overlayOpened('speakingStudy');
 
   const steps = isCheck ? speakingCheckStepDefs() : speakingDayStepDefs();
   speakingStepIdx = Math.max(0, Math.min(speakingStepIdx, steps.length - 1));
@@ -397,3 +451,5 @@ function speakingGoStep(delta) {
   const body = document.getElementById('speaking-study-body');
   if (body) body.scrollTop = 0;
 }
+
+registerOverlay('speakingStudy', speakingCloseStudyUI);

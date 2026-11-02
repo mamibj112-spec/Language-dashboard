@@ -296,6 +296,27 @@ function switchTab(name, skipHistory) {
   if (!skipHistory) pushHistoryState();
 }
 
+// ── 전체화면 화면(어휘·스피킹 학습, 자동 듣기)을 폰 뒤로가기로 닫기 ──
+// 열릴 때 방문 기록을 하나 쌓아두고, 뒤로가기(=기록 되돌리기)가 오면 그 화면만 닫는다.
+// 각 탭 파일에서 registerOverlay(이름, 닫는 함수)로 등록. 닫는 함수는 이미 닫혀 있으면 아무것도 안 해야 함.
+const OVERLAY_CLOSERS = {};
+
+function registerOverlay(name, closeUI) {
+  OVERLAY_CLOSERS[name] = closeUI;
+}
+
+function overlayOpened(name) {
+  if (isRestoringHistory) return;
+  if (history.state && history.state.modal === name) return;
+  history.pushState({ dashboard: currentDashboard, tab: currentTabName, modal: name }, '', location.href);
+}
+
+// ✕ 버튼 등으로 닫을 때: 쌓아둔 기록이 있으면 되돌려서(→ popstate가 닫아줌) 기록이 남지 않게
+function overlayClose(name) {
+  if (history.state && history.state.modal === name) history.back();
+  else if (OVERLAY_CLOSERS[name]) OVERLAY_CLOSERS[name]();
+}
+
 // ── 뒤로가기 버튼 처리 (모달/탭/대시보드 순서로 닫고 이동) ──
 window.addEventListener('popstate', (e) => {
   isRestoringHistory = true;
@@ -304,6 +325,7 @@ window.addEventListener('popstate', (e) => {
     const targetModal = state && state.modal;
     if (targetModal !== 'lightbox') closeMediaLightboxUI();
     if (targetModal !== 'noteForm') closeNoteFormUI();
+    Object.keys(OVERLAY_CLOSERS).forEach(name => { if (targetModal !== name) OVERLAY_CLOSERS[name](); });
     if (state) {
       if (state.dashboard && state.dashboard !== currentDashboard) {
         currentDashboard = state.dashboard;
